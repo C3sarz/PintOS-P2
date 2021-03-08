@@ -1,0 +1,17 @@
+==============================
+    CIS 520 S21 - Project 2
+	   ---
+==============================
+
+==== Observations ====
+
+==== Modified files ====
+
+*-process.c:
+
+	-Modified setup_stack()
+	-implementing passing arguments
+
+*-process.h:
+	
+	-Added arguments struct

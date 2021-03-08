@@ -28,8 +28,12 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 tid_t
 process_execute (const char *file_name) 
 {
+
+  /// PROJECT 2 ///
+
   char *fn_copy;
   tid_t tid;
+  struct arguments * args;
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
@@ -38,11 +42,43 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
-  /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  /* Allocate memory for arguments structure, might be a bit wasteful */
+  args = palloc_get_page (0);                                             /* Allocate a page for args struct and error checking. */
+  if (args == NULL)                                                       /* Error checking. */
+  {
+    palloc_free_page(fn_copy);
+    return TID_ERROR;
+  }
+  args->argc = 0;                                                    /* Initialize the arguments counter. */
+  args->argv = palloc_get_page(0);                                        /* Allocate and initialize argument array. */
+  if (args->argv == NULL)                                                 /* Error checking. */
+  {
+    palloc_free_page(fn_copy);
+    palloc_free_page(args);
+    return TID_ERROR;
+  }
+
+  /* Use the provided string tokenizer to get the arguments */
+  char *token, *save_ptr;
+  for (token = strtok_r (fn_copy, " ", &save_ptr); token != NULL;token = strtok_r (NULL, " ", &save_ptr))
+  {
+    args->argv[args->argc] = token;                 /* Save argument. */
+    args->argc += 1;                                /* Increment counter. */
+  }
+
+  /* Create a new thread to execute FILE_NAME, passing arguments as ARGS. */
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, args);
   if (tid == TID_ERROR)
-    palloc_free_page (fn_copy); 
+  {
+    palloc_free_page (fn_copy);
+    palloc_free_page(args->argv);
+    palloc_free_page(args);
+  }
+
   return tid;
+
+  //- PROJECT 2 -//
+
 }
 
 /* A thread function that loads a user process and starts it
@@ -437,7 +473,7 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE;
+        *esp = PHYS_BASE - 12;  /////////////////////////////////////////////////////////////////////////////////////////////////////// P2 temp solution
       else
         palloc_free_page (kpage);
     }
