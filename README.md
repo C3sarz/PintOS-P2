@@ -6,6 +6,6 @@
 
 TODO List:
 
-1. Argument passing
+1. Argument passing - still not working
 2. User memory access
 3. Basic syscall infrastructure

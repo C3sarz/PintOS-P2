@@ -19,7 +19,7 @@
 #include "threads/vaddr.h"
 
 static thread_func start_process NO_RETURN;
-static bool load (const char *cmdline, void (**eip) (void), void **esp);
+static bool load (struct arguments * args, void (**eip) (void), void **esp);
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -42,15 +42,15 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
-  /* Allocate memory for arguments structure, might be a bit wasteful */
+  /* Allocate memory for arguments structure, might be a bit wasteful. */
   args = palloc_get_page (0);                                             /* Allocate a page for args struct and error checking. */
   if (args == NULL)                                                       /* Error checking. */
   {
     palloc_free_page(fn_copy);
     return TID_ERROR;
   }
-  args->argc = 0;                                                    /* Initialize the arguments counter. */
-  args->argv = palloc_get_page(0);                                        /* Allocate and initialize argument array. */
+  args->argc = 0;                                                         /* Initialize the arguments counter. */
+  args->argv = (char **)palloc_get_page(0);                               /* Allocate and initialize argument array. */
   if (args->argv == NULL)                                                 /* Error checking. */
   {
     palloc_free_page(fn_copy);
@@ -67,7 +67,7 @@ process_execute (const char *file_name)
   }
 
   /* Create a new thread to execute FILE_NAME, passing arguments as ARGS. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, args);
+  tid = thread_create (args->argv[0], PRI_DEFAULT, start_process, args);
   if (tid == TID_ERROR)
   {
     palloc_free_page (fn_copy);
@@ -84,9 +84,9 @@ process_execute (const char *file_name)
 /* A thread function that loads a user process and starts it
    running. */
 static void
-start_process (void *file_name_)
+start_process (void * passed_args)
 {
-  char *file_name = file_name_;
+  struct arguments * args = (struct arguments *) passed_args;
   struct intr_frame if_;
   bool success;
 
@@ -95,10 +95,11 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name, &if_.eip, &if_.esp);
+  success = load (args, &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
-  palloc_free_page (file_name);
+  palloc_free_page (args->argv);
+  palloc_free_page (args);
   if (!success) 
     thread_exit ();
 
@@ -242,8 +243,9 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
    and its initial stack pointer into *ESP.
    Returns true if successful, false otherwise. */
 bool
-load (const char *file_name, void (**eip) (void), void **esp) 
+load (struct arguments * args, void (**eip) (void), void **esp) 
 {
+  char * file_name = args->argv[0];       /* Gets file name from args */
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
   struct file *file = NULL;
@@ -329,17 +331,26 @@ load (const char *file_name, void (**eip) (void), void **esp)
                 }
               if (!load_segment (file, file_page, (void *) mem_page,
                                  read_bytes, zero_bytes, writable))
+              {
+                printf("Failed at load segment, i = %d\n",i);////////////////////
                 goto done;
+              }
             }
           else
+          {
+            printf("Failed at validate_segment, i = %d\n",i);////////////////////
             goto done;
+          }
           break;
         }
     }
 
   /* Set up stack. */
   if (!setup_stack (esp))
+  {
+    printf("Failed at stack setup, i = %d\n",i);////////////////////
     goto done;
+  }
 
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
@@ -424,7 +435,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT (ofs % PGSIZE == 0);
 
   file_seek (file, ofs);
-  while (read_bytes > 0 || zero_bytes > 0) 
+  while (read_bytes > 0 || zero_bytes > 0)
     {
       /* Calculate how to fill this page.
          We will read PAGE_READ_BYTES bytes from FILE

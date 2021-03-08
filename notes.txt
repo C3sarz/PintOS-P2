@@ -5,12 +5,19 @@
 
 ==== Observations ====
 
+
+load() fails at:
+	Failed at load segment, i = 1
+Will email a TA, and work on syscalls in the meanwhile.
+
+
 ==== Modified files ====
 
 *-process.c:
 
 	-Modified setup_stack()
 	-implementing passing arguments
+	-modified load() to acomodate args
 
 *-process.h:
 	
