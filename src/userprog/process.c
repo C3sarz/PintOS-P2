@@ -62,7 +62,7 @@ get_word(const uint32_t * address)
 
     if(!valid_user_pointer(byte))           /* Check if byte address is valid */
     {
-      system_exit(-1);                      /* If invalid, get rid of offending process */
+      sys_exit(-1);                      /* If invalid, get rid of offending process */
       NOT_REACHED();
     }
     *((uint8_t *) &word + i) = *(byte);     /* Assemble word. */

@@ -27,3 +27,8 @@ Illegal memory accesses:
 	
 	-Added arguments struct
 	-function prototypes
+
+
+*-syscall.h:
+	
+	-added function prototypes
