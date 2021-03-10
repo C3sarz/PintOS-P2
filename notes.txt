@@ -8,9 +8,10 @@
 
 load() fails at:
 	Failed at load segment, i = 1
--Will email a TA, and work on syscalls in the meanwhile.
 -Not working possibly due to a lack of syscalls.
 
+Illegal memory accesses:
+	-How do we release memory and pages after crashing the process??
 
 ==== Modified files ====
 
@@ -19,9 +20,10 @@ load() fails at:
 	-Modified setup_stack()
 	-implementing passing arguments
 	-modified load() to acomodate args
+	-validate pointer function
+	-get_word function
 
 *-process.h:
 	
 	-Added arguments struct
-	-validate pointer function
-	-get_word function
+	-function prototypes

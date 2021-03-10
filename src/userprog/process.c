@@ -25,16 +25,27 @@ static bool load (struct arguments * args, void (**eip) (void), void **esp);
 
 /* Verifies if the given address is valid and belongs to the process.*/
 static bool
-valid_user_pointer(const uint32_t * address)
+valid_user_pointer(const void * address)
 {
-  if(address >= PHYS_BASE)       /* Error if outside of user space. */
+
+  /* Check null pointer */
+  if(address == NULL)
     return false;
 
-//get page table for process and error check.
+  /* Error if outside of user space. */
+  if(is_kernel_vaddr(address) || !is_user_vaddr(address)) 
+    return false;
 
-//verify if address is at a page owned by the process, if not, ERROR.
+  /* Get page table for process and error check. */
+  uint32_t * pagedir = active_pd();
+  if(pagedir == NULL)
+    return false;
 
+  /* Verify if UADDR is mapped. */
+  if(pagedir_get_page(pagedir, address) == NULL)
+    return false;
 
+  return true;
 }
 
 /* Retrieves a word from user memory. 
@@ -42,20 +53,22 @@ If the given pointer is invalid or illegal, the process is terminated */
 static uint32_t
 get_word(const uint32_t * address)
 {
-  uint32_t result;
+  uint32_t word;
   int i;
 
-  if(!valid_user_pointer(address))
+  for(i = 0; i < 4; i++)                    /* For every byte i in word */
   {
-    //get rid of the offending process.
-    system_exit(-1);
-    NOT_REACHED ();
+    unsigned char * byte = (unsigned char *)address + i;  /* Get byte i from word */
+
+    if(!valid_user_pointer(byte))           /* Check if byte address is valid */
+    {
+      system_exit(-1);                      /* If invalid, get rid of offending process */
+      NOT_REACHED();
+    }
+    *((uint8_t *) &word + i) = *(byte);     /* Assemble word. */
+
   }
-
-  //retrieve word (iterate through 4 bytes and then combine them)
-
-
-  return result;
+  return word;
 }
 
 //- PROJECT 2 -//
