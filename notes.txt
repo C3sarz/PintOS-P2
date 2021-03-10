@@ -8,7 +8,8 @@
 
 load() fails at:
 	Failed at load segment, i = 1
-Will email a TA, and work on syscalls in the meanwhile.
+-Will email a TA, and work on syscalls in the meanwhile.
+-Not working possibly due to a lack of syscalls.
 
 
 ==== Modified files ====
@@ -22,3 +23,5 @@ Will email a TA, and work on syscalls in the meanwhile.
 *-process.h:
 	
 	-Added arguments struct
+	-validate pointer function
+	-get_word function

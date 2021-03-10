@@ -21,6 +21,45 @@
 static thread_func start_process NO_RETURN;
 static bool load (struct arguments * args, void (**eip) (void), void **esp);
 
+/// PROJECT 2 ///
+
+/* Verifies if the given address is valid and belongs to the process.*/
+static bool
+valid_user_pointer(const uint32_t * address)
+{
+  if(address >= PHYS_BASE)       /* Error if outside of user space. */
+    return false;
+
+//get page table for process and error check.
+
+//verify if address is at a page owned by the process, if not, ERROR.
+
+
+}
+
+/* Retrieves a word from user memory. 
+If the given pointer is invalid or illegal, the process is terminated */
+static uint32_t
+get_word(const uint32_t * address)
+{
+  uint32_t result;
+  int i;
+
+  if(!valid_user_pointer(address))
+  {
+    //get rid of the offending process.
+    system_exit(-1);
+    NOT_REACHED ();
+  }
+
+  //retrieve word (iterate through 4 bytes and then combine them)
+
+
+  return result;
+}
+
+//- PROJECT 2 -//
+
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
@@ -43,15 +82,15 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
 
   /* Allocate memory for arguments structure, might be a bit wasteful. */
-  args = palloc_get_page (0);                                             /* Allocate a page for args struct and error checking. */
-  if (args == NULL)                                                       /* Error checking. */
+  args = palloc_get_page (0);                          /* Allocate a page for args struct and error checking. */
+  if (args == NULL)                                    /* Error checking. */
   {
     palloc_free_page(fn_copy);
     return TID_ERROR;
   }
-  args->argc = 0;                                                         /* Initialize the arguments counter. */
-  args->argv = (char **)palloc_get_page(0);                               /* Allocate and initialize argument array. */
-  if (args->argv == NULL)                                                 /* Error checking. */
+  args->argc = 0;                                      /* Initialize the arguments counter. */
+  args->argv = (char **)palloc_get_page(0);            /* Allocate and initialize argument array. */
+  if (args->argv == NULL)                              /* Error checking. */
   {
     palloc_free_page(fn_copy);
     palloc_free_page(args);
