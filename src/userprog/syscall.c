@@ -4,6 +4,8 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
+static void syscall_handler (struct intr_frame * f);
+
 void
 syscall_init (void) 
 {
@@ -13,8 +15,7 @@ syscall_init (void)
 /// PROJECT 2 ///
 
 /* Handles syscall requests */
-static void
-syscall_handler (struct intr_frame *f UNUSED) 
+static void syscall_handler (struct intr_frame * f) 
 {
   printf ("system call!\n");
   thread_exit ();
@@ -28,7 +29,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 /* Halts the operating system. */
 void sys_halt (void)
 {
-	power_off();
+	
 }
 
 /* Stops the process.*/

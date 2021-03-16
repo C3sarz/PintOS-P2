@@ -20,12 +20,14 @@
 
 static thread_func start_process NO_RETURN;
 static bool load (struct arguments * args, void (**eip) (void), void **esp);
+static bool valid_user_pointer(const uint32_t * address);
+static uint32_t get_word(const uint32_t * address);
 
 /// PROJECT 2 ///
 
 /* Verifies if the given address is valid and belongs to the process.*/
 static bool
-valid_user_pointer(const void * address)
+valid_user_pointer(const uint32_t * address)
 {
 
   /* Check null pointer */

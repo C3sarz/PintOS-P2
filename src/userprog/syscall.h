@@ -1,11 +1,12 @@
 #ifndef USERPROG_SYSCALL_H
 #define USERPROG_SYSCALL_H
 
+#include "userprog/process.h"
+
 void syscall_init (void);
 
 /// PROJECT 2 ///
 
-static void syscall_handler (struct intr_frame *);
 void sys_halt (void);
 void sys_exit (int status);
 pid_t sys_exec (const char *cmd_line);

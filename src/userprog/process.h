@@ -12,8 +12,10 @@ struct arguments
 	char ** argv;		/* Array of argument strings. */
 };
 
-static bool valid_user_pointer(const uint32_t * address);
-static uint32_t get_word(const uint32_t * address);
+/* Thread identifier type.
+   You can redefine this to whatever type you like. */
+typedef int pid_t;
+#define PID_ERROR ((pid_t) -1)          /* Error value for tid_t. */
 
 //-PROJECT 2-//
 
