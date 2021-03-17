@@ -20,60 +20,7 @@
 
 static thread_func start_process NO_RETURN;
 static bool load (struct arguments * args, void (**eip) (void), void **esp);
-static bool valid_user_pointer(const uint32_t * address);
-static uint32_t get_word(const uint32_t * address);
 
-/// PROJECT 2 ///
-
-/* Verifies if the given address is valid and belongs to the process.*/
-static bool
-valid_user_pointer(const uint32_t * address)
-{
-
-  /* Check null pointer */
-  if(address == NULL)
-    return false;
-
-  /* Error if outside of user space. */
-  if(is_kernel_vaddr(address) || !is_user_vaddr(address)) 
-    return false;
-
-  /* Get page table for process and error check. */
-  uint32_t * pagedir = active_pd();
-  if(pagedir == NULL)
-    return false;
-
-  /* Verify if UADDR is mapped. */
-  if(pagedir_get_page(pagedir, address) == NULL)
-    return false;
-
-  return true;
-}
-
-/* Retrieves a word from user memory. 
-If the given pointer is invalid or illegal, the process is terminated */
-static uint32_t
-get_word(const uint32_t * address)
-{
-  uint32_t word;
-  int i;
-
-  for(i = 0; i < 4; i++)                    /* For every byte i in word */
-  {
-    unsigned char * byte = (unsigned char *)address + i;  /* Get byte i from word */
-
-    if(!valid_user_pointer(byte))           /* Check if byte address is valid */
-    {
-      sys_exit(-1);                      /* If invalid, get rid of offending process */
-      NOT_REACHED();
-    }
-    *((uint8_t *) &word + i) = *(byte);     /* Assemble word. */
-
-  }
-  return word;
-}
-
-//- PROJECT 2 -//
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)

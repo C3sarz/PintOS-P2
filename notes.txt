@@ -8,7 +8,7 @@
 
 load() fails at:
 	Failed at load segment, i = 1
--Not working possibly due to a lack of syscalls.
+-Linux problem, must use the beocat system (redhat).
 
 Illegal memory accesses:
 	-How do we release memory and pages after crashing the process??
@@ -29,6 +29,11 @@ Illegal memory accesses:
 	-Added arguments struct
 	-function prototypes
 
+
+*-syscall.c:
+	-added file lock
+	-added skeleton syscall handler
+	-sys_halt function
 
 *-syscall.h:
 	

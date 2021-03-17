@@ -8,7 +8,7 @@
 /* Structure to pass on arguments as a single unit when executing a process. */
 struct arguments
 {
-	uint8_t argc;			/* Number of arguments tokenized from string. */
+	uint8_t argc;		/* Number of arguments tokenized from string. */
 	char ** argv;		/* Array of argument strings. */
 };
 
