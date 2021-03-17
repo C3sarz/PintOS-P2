@@ -120,6 +120,9 @@ process_execute (const char *file_name)
     args->argc += 1;                                /* Increment counter. */
   }
 
+  //add the null pointer because it is C standard
+  //args->argv[argc] = 0; //ADDED CODE   !!!!!!!!!!!!!!!!Might not be able to put here but we shall see, it might have to go in setup_stack
+
   /* Create a new thread to execute FILE_NAME, passing arguments as ARGS. */
   tid = thread_create (args->argv[0], PRI_DEFAULT, start_process, args);
   if (tid == TID_ERROR)
@@ -528,8 +531,15 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
 static bool
-setup_stack (void **esp) 
+setup_stack (void **esp, struct arguments * args) 
 {
+  uint32_t ** arg_pointers = (uint32_t **) calloc(args->argc, sizeof(uint32_t));
+  if(arg_pointers == NULL)
+  {
+    return NULL;
+  }
+
+
   uint8_t *kpage;
   bool success = false;
 
@@ -542,6 +552,55 @@ setup_stack (void **esp)
       else
         palloc_free_page (kpage);
     }
+
+  //ADDED CODE
+  char * token;
+  int i;
+
+  //Placing the words at the top of the stack (in right to left order but it doesnt matter at this point since we'll reference the data from pointer later)
+  for(i = args->argc - 1; i >= 0; i--)
+  {
+    *esp -= strlen(args->argv[i] + 1)); //sizeof(char)???? or sizeof(char*) not strlen    BUT  
+    memcpy(*esp, args->argv[i], strlen(args->argv[i] + 1)); //possibly change strlen() to sizeof(char*) or sizeof(char)
+    args_pointers[i] = *esp; /////double check (uint32_t) *esp????????? 
+  }
+  
+  //NULL pointer for C standard
+  args->argv[argc] = 0; //maybe put after alignment
+
+  //Word-aligned acess is much faster than unaligned, so for best performance we want to round the stack pointer down to a multiple of 4
+  i = (size_t)*esp % 4;
+  for(i)
+  {
+    *esp -= i; //!!!might need to add zeros when we dont need it
+    memcpy(*esp, &args->argv[argc], i); 
+  }
+
+  //push args_pointers onto stack from right to left 
+  for(i = args->argc; i >= 0; i--)
+  {
+    *esp -= sizeof(char*); 
+    memcpy(*esp, &args_pointers[i], sizeof(char*)); //!!!!! maybe take away &
+  }
+
+  //pushing argv, then argc, then a fake "return address"
+  //!!!!!!!!!! ALWAYS double check sizeof
+
+  //pushing argv
+  token = *esp;
+  *esp -= sizeof(char**);
+  memcpy(*esp, &token, sizeof(char**));
+
+  //pushing argc
+  *esp -= sizeof(int);
+  memcpy(*esp, &args->argc, sizeof(int)); //&args->argc?????????????
+
+  //pushing fake return address
+  *esp -= sizeof(void*);
+  memcpy(*esp, &args->argv[argc], sizeof(void*)); 
+
+  free(args_pointers);
+
   return success;
 }
 
