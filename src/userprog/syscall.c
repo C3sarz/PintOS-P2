@@ -71,10 +71,11 @@ get_word(const uint32_t * address)
 /* Handles syscall requests */
 static void syscall_handler (struct intr_frame * f) 
 {
-  printf ("system call!\n");
-  thread_exit ();
 
   int * esp_addr = *(get_word(f->esp));		/* Get system call number from stack pointer. */
+
+  printf ("system call! Number: %d \n", esp_addr);		///DEBUG///
+  thread_exit ();										///DEBUG///
 
   switch(esp_addr)
   {
