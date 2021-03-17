@@ -13,9 +13,6 @@ static bool valid_user_pointer(const uint32_t * address);
 static uint32_t get_word(const uint32_t * address);
 static void syscall_handler (struct intr_frame * f);
 
-
-struct lock file_lock;
-
 void
 syscall_init (void) 
 {
@@ -87,7 +84,7 @@ static void syscall_handler (struct intr_frame * f)
   		break;
 
   	case SYS_EXIT:
-  		NOT_REACHED(); //NOT IMPLEMENTED YET
+  		sys_exit(get_word(f->esp+1));
   		break;
 
   	case SYS_EXEC:
@@ -140,11 +137,6 @@ static void syscall_handler (struct intr_frame * f)
   		thread_exit();
   		break;		
   }
-
-
-  //switch for syscalls?
-
-
 }
 
 /* Halts the operating system. */
@@ -156,7 +148,11 @@ void sys_halt (void)
 /* Stops the process.*/
 void sys_exit (int status)
 {
+	struct thread * t = thread_current();
 
+	//all code regarding children goes here
+
+	printf("%s: exit(%d)\n", t->name, status);
 }
 
 pid_t sys_exec (const char *cmd_line)

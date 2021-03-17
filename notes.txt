@@ -37,3 +37,9 @@ Illegal memory accesses:
 *-syscall.h:
 	
 	-added function prototypes
+
+*-thread.c
+	-initialized new properties
+
+*-thread.h
+	-added children list property
