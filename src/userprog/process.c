@@ -566,14 +566,14 @@ setup_stack (void **esp, struct arguments * args)
   }
   
   //NULL pointer for C standard
-  args->argv[argc] = 0; //maybe put after alignment
+  args->argv[args->argc] = 0; //maybe put after alignment
 
   //Word-aligned acess is much faster than unaligned, so for best performance we want to round the stack pointer down to a multiple of 4
   i = (size_t)*esp % 4;
   for(i)
   {
     *esp -= i; //!!!might need to add zeros when we dont need it
-    memcpy(*esp, &args->argv[argc], i); 
+    memcpy(*esp, &args->argv[args->argc], i); 
   }
 
   //push args_pointers onto stack from right to left 
@@ -597,7 +597,7 @@ setup_stack (void **esp, struct arguments * args)
 
   //pushing fake return address
   *esp -= sizeof(void*);
-  memcpy(*esp, &args->argv[argc], sizeof(void*)); 
+  memcpy(*esp, &args->argv[args->argc], sizeof(void*)); 
 
   free(args_pointers);
 

@@ -22,6 +22,7 @@ Illegal memory accesses:
 	-modified load() to acomodate args
 	-validate pointer function
 	-get_word function
+	-added argument passing in setup_stack(). Functionality probably won't look but good layout
 
 *-process.h:
 	
