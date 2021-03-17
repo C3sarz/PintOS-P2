@@ -3,8 +3,11 @@
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
-#include "threads/init.h"
+#include "devices/shutdown.h"
 #include "threads/synch.h"
+#include "threads/vaddr.h"
+#include "userprog/pagedir.h"
+#include "threads/thread.h"
 
 static bool valid_user_pointer(const uint32_t * address);
 static uint32_t get_word(const uint32_t * address);
@@ -34,7 +37,7 @@ valid_user_pointer(const uint32_t * address)
     return false;
 
   /* Get page table for process and error check. */
-  uint32_t * pagedir = active_pd();
+  uint32_t * pagedir = thread_current()->pagedir;
   if(pagedir == NULL)
     return false;
 
@@ -72,7 +75,7 @@ get_word(const uint32_t * address)
 static void syscall_handler (struct intr_frame * f) 
 {
 
-  int * esp_addr = *(get_word(f->esp));		/* Get system call number from stack pointer. */
+  int esp_addr = get_word(f->esp);		/* Get system call number from stack pointer. */
 
   printf ("system call! Number: %d \n", esp_addr);		///DEBUG///
   thread_exit ();										///DEBUG///
@@ -147,7 +150,7 @@ static void syscall_handler (struct intr_frame * f)
 /* Halts the operating system. */
 void sys_halt (void)
 {
-	power_off(); // Power off PintOS (from threads/init.h).
+	shutdown_power_off(); // Power off PintOS (from threads/init.h).
 }
 
 /* Stops the process.*/
