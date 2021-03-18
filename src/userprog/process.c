@@ -480,6 +480,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp, struct arguments * args) 
 {
+  //Will store the pointers to argv on stack
   uint32_t ** arg_pointers = (uint32_t **) calloc(args->argc, sizeof(uint32_t));
   if(arg_pointers == NULL)
   {
@@ -495,7 +496,7 @@ setup_stack (void **esp, struct arguments * args)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE - 12;  /////////////////////////////////////////////////////////////////////////////////////////////////////// P2 temp solution
+        *esp = PHYS_BASE;  /////////////////////////////////////////////////////////////////////////////////////////////////////// P2 temp solution -> Jack removed this after stack setup was completed
       else
         palloc_free_page (kpage);
     }
@@ -516,7 +517,7 @@ setup_stack (void **esp, struct arguments * args)
   args->argv[args->argc] = 0; //maybe put after alignment
 
   //Word-aligned acess is much faster than unaligned, so for best performance we want to round the stack pointer down to a multiple of 4
-  i = (size_t)*esp % 4;
+  i = (size_t) *esp % 4;
   for(i)
   {
     *esp -= i; //!!!might need to add zeros when we dont need it
