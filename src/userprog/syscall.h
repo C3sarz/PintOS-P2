@@ -2,10 +2,13 @@
 #define USERPROG_SYSCALL_H
 
 #include "userprog/process.h"
+#include "threads/synch.h"
 
 void syscall_init (void);
 
 /// PROJECT 2 ///
+
+struct lock file_lock;	/* Filesystem lock. */
 
 void sys_halt (void);
 void sys_exit (int status);
