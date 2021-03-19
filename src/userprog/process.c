@@ -510,7 +510,7 @@ setup_stack (void **esp, struct arguments * args)
   {
     *esp -= strlen(args->argv[i] + 1); //sizeof(char)???? or sizeof(char*) not strlen    BUT  
     memcpy(*esp, args->argv[i], strlen(args->argv[i] + 1)); //possibly change strlen() to sizeof(char*) or sizeof(char)
-    args_pointers[i] = *esp; /////double check (uint32_t) *esp????????? 
+    arg_pointers[i] = *esp; /////double check (uint32_t) *esp????????? 
   }
   
   //NULL pointer for C standard
@@ -518,7 +518,7 @@ setup_stack (void **esp, struct arguments * args)
 
   //Word-aligned acess is much faster than unaligned, so for best performance we want to round the stack pointer down to a multiple of 4
   i = (size_t) *esp % 4;
-  for(i)
+  if(i)
   {
     *esp -= i; //!!!might need to add zeros when we dont need it
     memcpy(*esp, &args->argv[args->argc], i); 
@@ -528,7 +528,7 @@ setup_stack (void **esp, struct arguments * args)
   for(i = args->argc; i >= 0; i--)
   {
     *esp -= sizeof(char*); 
-    memcpy(*esp, &args_pointers[i], sizeof(char*)); //!!!!! maybe take away &
+    memcpy(*esp, &arg_pointers[i], sizeof(char*)); //!!!!! maybe take away &
   }
 
   //pushing argv, then argc, then a fake "return address"
@@ -547,7 +547,7 @@ setup_stack (void **esp, struct arguments * args)
   *esp -= sizeof(void*);
   memcpy(*esp, &args->argv[args->argc], sizeof(void*)); 
 
-  free(args_pointers);
+  free(arg_pointers);
 
   return success;
 }
