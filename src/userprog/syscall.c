@@ -76,35 +76,39 @@ static void
 syscall_handler (struct intr_frame * f) 
 {
 
-  int esp_addr = get_word(f->esp);		/* Get system call number from stack pointer. */
+  int esp_word = get_word(f->esp);		/* Get system call number from stack pointer. */
 
-  printf ("DEBUG, System call! Number: %d \n", esp_addr);		///DEBUG///
-  thread_exit ();										///DEBUG///
+  // printf ("DEBUG, System call! Number: %d \n", esp_word);		///DEBUG///
+  // thread_exit ();												///DEBUG///
 
-  switch(esp_addr)
+  switch(esp_word)
   {
   	case SYS_HALT:
-  		sys_halt();
+  		sys_halt();	/* Halt system. */
   		break;
 
   	case SYS_EXIT:
-  		sys_exit(get_word(f->esp+1));
+  		sys_exit(get_word(f->esp+1));	/* Exit status is the first parameter. */
   		break;
 
   	case SYS_EXEC:
-  		NOT_REACHED(); //NOT IMPLEMENTED YET
+   		printf ("DEBUG, System call! SYS_EXEC \n");					///DEBUG///
+  		thread_exit ();												///DEBUG///
   		break;
 
   	case SYS_WAIT:
-  		NOT_REACHED(); //NOT IMPLEMENTED YET
+  		printf ("DEBUG, System call! SYS_WAIT \n");					///DEBUG///
+  		thread_exit ();												///DEBUG///
   		break;
 
   	case SYS_CREATE:
-  		NOT_REACHED(); //NOT IMPLEMENTED YET
+  	  	printf ("DEBUG, System call! SYS_CREATE \n");					///DEBUG///
+  		thread_exit ();													///DEBUG///
   		break;
 
   	case SYS_REMOVE:
-  		NOT_REACHED(); //NOT IMPLEMENTED YET
+  	  	printf ("DEBUG, System call! SYS_REMOVE \n");					///DEBUG///
+  		thread_exit ();													///DEBUG///
   		break;
 
   	case SYS_OPEN:
@@ -123,28 +127,33 @@ syscall_handler (struct intr_frame * f)
   		break;
 
   	case SYS_READ:
-  		NOT_REACHED(); //NOT IMPLEMENTED YET
+  	  	printf ("DEBUG, System call! SYS_READ \n");					///DEBUG///
+  		thread_exit ();		
   		break;
 
   	case SYS_WRITE:
-  		NOT_REACHED(); //NOT IMPLEMENTED YET
+  	  	printf ("DEBUG, System call! SYS_WRITE \n");					///DEBUG///
+  		thread_exit ();	
   		break;
 
   	case SYS_SEEK:
-  		NOT_REACHED(); //NOT IMPLEMENTED YET
+  	  	printf ("DEBUG, System call! SYS_SEEK \n");					///DEBUG///
+  		thread_exit ();	
   		break;
 
     case SYS_TELL:
-  		NOT_REACHED(); //NOT IMPLEMENTED YET
+  	  	printf ("DEBUG, System call! SYS_TELL \n");					///DEBUG///
+  		thread_exit ();	
   		break;
 
     case SYS_CLOSE:
-  		NOT_REACHED(); //NOT IMPLEMENTED YET
+  	  	printf ("DEBUG, System call! SYS_CLOSE \n");					///DEBUG///
+  		thread_exit ();	
   		break;
 
   	/* Invalid system call scenario: terminate process. */
   	default:
-  		printf("Invalid system call: %d\n", esp_addr);
+  		printf("Invalid system call: %d\n", esp_word);
   		thread_exit();
   		break;		
   }
