@@ -2,6 +2,7 @@
 #define FILESYS_FILE_H
 
 #include "filesys/off_t.h"
+#include <list.h>
 
 struct inode;
 
@@ -25,5 +26,17 @@ void file_allow_write (struct file *);
 void file_seek (struct file *, off_t);
 off_t file_tell (struct file *);
 off_t file_length (struct file *);
+
+///PROJECT 2///
+
+/* Struct to keep track of open files in a list. */
+struct open_file_elem
+{
+	int fd; 					/* File descriptor */
+	struct file * file_ptr; 	/* Pointer to file */
+	struct list_elem elem;      /* List element. */
+};
+
+//-PROJECT 2 -//
 
 #endif /* filesys/file.h */

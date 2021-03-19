@@ -20,8 +20,6 @@ Illegal memory accesses:
 	-Modified setup_stack()
 	-implementing passing arguments
 	-modified load() to acomodate args
-	-validate pointer function
-	-get_word function
 	-added argument passing in setup_stack(). Functionality probably won't look but good layout
 
 *-process.h:
@@ -29,8 +27,9 @@ Illegal memory accesses:
 	-Added arguments struct
 	-function prototypes
 
-
 *-syscall.c:
+	-validate pointer function
+	-get_word function
 	-added file lock
 	-added skeleton syscall handler
 	-sys_halt function
@@ -44,3 +43,8 @@ Illegal memory accesses:
 
 *-thread.h
 	-added children list property
+	-added open_files list property
+	-added args property
+
+*-file.h
+	-added new open_file_elem struct.

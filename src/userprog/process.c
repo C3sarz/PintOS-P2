@@ -236,7 +236,7 @@ struct Elf32_Phdr
 #define PF_W 2          /* Writable. */
 #define PF_R 4          /* Readable. */
 
-static bool setup_stack (void **esp);
+static bool setup_stack (void **esp, struct arguments * args);
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
 static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
@@ -350,7 +350,7 @@ load (struct arguments * args, void (**eip) (void), void **esp)
     }
 
   /* Set up stack. */
-  if (!setup_stack (esp))
+  if (!setup_stack (esp, args))
   {
     printf("Failed at stack setup, i = %d\n",i);////////////////////
     goto done;
@@ -507,7 +507,7 @@ setup_stack (void **esp, struct arguments * args)
   //Placing the words at the top of the stack (in right to left order but it doesnt matter at this point since we'll reference the data from pointer later)
   for(i = args->argc - 1; i >= 0; i--)
   {
-    *esp -= strlen(args->argv[i] + 1)); //sizeof(char)???? or sizeof(char*) not strlen    BUT  
+    *esp -= strlen(args->argv[i] + 1); //sizeof(char)???? or sizeof(char*) not strlen    BUT  
     memcpy(*esp, args->argv[i], strlen(args->argv[i] + 1)); //possibly change strlen() to sizeof(char*) or sizeof(char)
     args_pointers[i] = *esp; /////double check (uint32_t) *esp????????? 
   }

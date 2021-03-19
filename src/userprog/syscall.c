@@ -8,6 +8,9 @@
 #include "threads/vaddr.h"
 #include "userprog/pagedir.h"
 #include "threads/thread.h"
+#include "filesys/file.h"
+#include <list.h>
+#include <stdbool.h>
 
 static bool valid_user_pointer(const uint32_t * address);
 static uint32_t get_word(const uint32_t * address);
@@ -69,12 +72,13 @@ get_word(const uint32_t * address)
 }
 
 /* Handles syscall requests */
-static void syscall_handler (struct intr_frame * f) 
+static void
+syscall_handler (struct intr_frame * f) 
 {
 
   int esp_addr = get_word(f->esp);		/* Get system call number from stack pointer. */
 
-  printf ("system call! Number: %d \n", esp_addr);		///DEBUG///
+  printf ("DEBUG, System call! Number: %d \n", esp_addr);		///DEBUG///
   thread_exit ();										///DEBUG///
 
   switch(esp_addr)
@@ -104,11 +108,18 @@ static void syscall_handler (struct intr_frame * f)
   		break;
 
   	case SYS_OPEN:
-  		NOT_REACHED(); //NOT IMPLEMENTED YET
+
+  		const char * filename = f->esp + 1;	/* 	Get filename. */
+  		if(!valid_user_pointer(filename))	/* Check pointer validity. */		
+  			sys_exit(-1);
+  		
+  		f->eax = sys_open(filename);
   		break;
 
   	case SYS_FILESIZE:
-  		NOT_REACHED(); //NOT IMPLEMENTED YET
+
+  		const int fd = f->esp + 1;	/* 	Get file descriptor. */
+  		f->eax = sys_filesize(fd);	/* Find size. */
   		break;
 
   	case SYS_READ:
@@ -140,13 +151,15 @@ static void syscall_handler (struct intr_frame * f)
 }
 
 /* Halts the operating system. */
-void sys_halt (void)
+void
+sys_halt (void)
 {
 	shutdown_power_off(); // Power off PintOS (from threads/init.h).
 }
 
 /* Stops the process.*/
-void sys_exit (int status)
+void
+sys_exit (int status)
 {
 	struct thread * t = thread_current();
 
@@ -155,57 +168,143 @@ void sys_exit (int status)
 	printf("%s: exit(%d)\n", t->name, status);
 }
 
-pid_t sys_exec (const char *cmd_line)
+pid_t
+sys_exec (const char *cmd_line)
 {
 
 }
 
-int sys_wait (pid_t pid)
+int
+sys_wait (pid_t pid)
 {
 
 }
 
-bool sys_create (const char *file, unsigned initial_size)
+bool
+sys_create (const char *file, unsigned initial_size)
 {
 
 }
 
-bool sys_remove (const char *file)
+bool
+sys_remove (const char *file)
 {
 
 }
 
-int sys_open (const char *file)
+/* System call to open a file or file stream. */
+int
+sys_open (const char *file)
+{
+	int fd = -1;
+	if(&t->open_files == NULL)						/* Check if list is not NULL */
+		return -1;
+
+	lock_acquire(&file_lock);						/* Start critical section. */
+
+	struct file * open_file = filesys_open(file); 	/* Try to open file. */
+
+	if(open_file == NULL)							/* If NULL, return error state. */
+	{
+		lock_release(&file_lock);
+		return -1;
+	}
+
+	/* Alocate new list element. */
+	struct open_file_elem * new_elem = malloc(sizeof(struct open_file_elem));
+
+	/* Generate fd depending on list values */
+	if(list_empty(t->open_files))
+	{
+		fd = 2;	/* Default min value */
+	}
+
+	else		/* Else find highest value and add 1. */
+	{
+		for (e = list_begin (&t->open_files); e != list_end (&t->open_files);
+           e = list_next (e))
+        {
+          struct open_file_elem * curr = list_entry (e, struct open_file_elem, elem);
+          if(curr->fd >= fd)
+          	fd = curr->fd;
+        }
+        fd++;			/* Next after biggest fd */
+	}
+
+	/* Set up elem and add to list */
+	new_elem->fd = fd;
+	new_elem->file_ptr = open_file;
+	list_push_back(&thread_current()->open_files, &open_file_elem->elem);
+	lock_release(&file_lock);
+	return fd;
+}
+
+/* Search for open file and return its size in bytes. */
+int
+sys_filesize (int fd)
+{
+	bool found = false;
+	struct file * found_file_ptr;
+	lock_acquire(&file_lock);
+
+	/* Check if list exists and is not empty. */
+	if(t->open_files == NULL || list_empty(t->open_files))
+	{
+		lock_release(&file_lock);
+		return -1;
+	}
+
+	/* Search for the file. */
+	for (e = list_begin (&t->open_files); e != list_end (&t->open_files);
+        e = list_next (e))
+    {
+        struct open_file_elem * curr = list_entry (e, struct open_file_elem, elem);
+        if(curr->fd == fd)
+        {
+          	found = true;
+          	found_file_ptr = curr->file_ptr;
+        }          	
+    }
+
+    /* If file is not found return ERROR. */
+    if(!found)
+    {
+    	lock_release(&file_lock);
+    	return -1;
+    }
+
+    /* Find size, release lock, and return size in bytes. */
+    int size = file_length(found_file_ptr);
+    lock_release(&file_lock);
+    return size;
+}
+
+int
+sys_read (int fd, void *buffer, unsigned size)
 {
 
 }
 
-int sys_filesize (int fd)
+int
+sys_write (int fd, const void *buffer, unsigned size)
 {
 
 }
 
-int sys_read (int fd, void *buffer, unsigned size)
+void
+sys_seek (int fd, unsigned position)
 {
 
 }
 
-int sys_write (int fd, const void *buffer, unsigned size)
+unsigned
+sys_tell (int fd)
 {
 
 }
 
-void sys_seek (int fd, unsigned position)
-{
-
-}
-
-unsigned sys_tell (int fd)
-{
-
-}
-
-void sys_close (int fd)
+void
+sys_close (int fd)
 {
 
 }
