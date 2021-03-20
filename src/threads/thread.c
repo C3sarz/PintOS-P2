@@ -198,6 +198,13 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
+    ///PROJECT 2///
+
+  list_init(&t->children);       /* Direct children of this process. */
+  list_init(&t->open_files);     /* Files opened by this process. */
+
+  //-PROJECT 2-//
+
   /* Add to run queue. */
   thread_unblock (t);
 
