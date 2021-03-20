@@ -3,7 +3,7 @@
 #include <inttypes.h>
 #include <round.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include "threads/malloc.h"
 #include <string.h>
 #include "userprog/gdt.h"
 #include "userprog/pagedir.h"
@@ -496,7 +496,7 @@ setup_stack (void **esp, struct arguments * args)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE;  /////////////////////////////////////////////////////////////////////////////////////////////////////// P2 temp solution -> Jack removed this after stack setup was completed
+        *esp = PHYS_BASE;  
       else
         palloc_free_page (kpage);
     }

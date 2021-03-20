@@ -1,16 +1,19 @@
 #include "userprog/syscall.h"
+#include "threads/thread.h"
 #include <stdio.h>
+#include <list.h>
+#include <inttypes.h>
+#include <stdbool.h>
+#include "threads/malloc.h"
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
-#include "threads/thread.h"
 #include "devices/shutdown.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
 #include "userprog/pagedir.h"
-#include "threads/thread.h"
 #include "filesys/file.h"
-#include <list.h>
-#include <stdbool.h>
+#include "filesys/filesys.h"
+
 
 static bool valid_user_pointer(const uint32_t * address);
 static uint32_t get_word(const uint32_t * address);
@@ -60,7 +63,7 @@ get_word(const uint32_t * address)
   {
     unsigned char * byte = (unsigned char *)address + i;  /* Get byte i from word */
 
-    if(!valid_user_pointer(byte))           /* Check if byte address is valid */
+    if(!valid_user_pointer((uint32_t *)byte))           /* Check if byte address is valid */
     {
       sys_exit(-1);                      /* If invalid, get rid of offending process */
       NOT_REACHED();
@@ -75,12 +78,7 @@ get_word(const uint32_t * address)
 static void
 syscall_handler (struct intr_frame * f) 
 {
-
   int esp_word = get_word(f->esp);		/* Get system call number from stack pointer. */
-
-  // printf ("DEBUG, System call! Number: %d \n", esp_word);		///DEBUG///
-  // thread_exit ();												///DEBUG///
-
   switch(esp_word)
   {
   	case SYS_HALT:
@@ -97,9 +95,11 @@ syscall_handler (struct intr_frame * f)
   		break;
 
   	case SYS_WAIT:
+  	{
   		printf ("DEBUG, System call! SYS_WAIT \n");					///DEBUG///
   		thread_exit ();												///DEBUG///
   		break;
+  	}
 
   	case SYS_CREATE:
   	  	printf ("DEBUG, System call! SYS_CREATE \n");					///DEBUG///
@@ -112,19 +112,21 @@ syscall_handler (struct intr_frame * f)
   		break;
 
   	case SYS_OPEN:
-
-  		const char * filename = f->esp + 1;	/* 	Get filename. */
-  		if(!valid_user_pointer(filename))	/* Check pointer validity. */		
+  	{
+		char * filename = f->esp + 1;		/* Get filename. */
+  		if(!valid_user_pointer((uint32_t *)filename))	/* Check pointer validity. */		
   			sys_exit(-1);
   		
   		f->eax = sys_open(filename);
   		break;
+  	}
 
   	case SYS_FILESIZE:
-
-  		const int fd = f->esp + 1;	/* 	Get file descriptor. */
-  		f->eax = sys_filesize(fd);	/* Find size. */
+  	{
+  		int * fd = f->esp + 1;		/* Get file descriptor. */
+  		f->eax = sys_filesize(*fd);	/* Find size. */
   		break;
+  	}
 
   	case SYS_READ:
   	  	printf ("DEBUG, System call! SYS_READ \n");					///DEBUG///
@@ -177,34 +179,35 @@ sys_exit (int status)
 	printf("%s: exit(%d)\n", t->name, status);
 }
 
-pid_t
-sys_exec (const char *cmd_line)
-{
+// pid_t
+// sys_exec (const char *cmd_line)
+// {
 
-}
+// }
 
-int
-sys_wait (pid_t pid)
-{
+// int
+// sys_wait (pid_t pid)
+// {
 
-}
+// }
 
-bool
-sys_create (const char *file, unsigned initial_size)
-{
+// bool
+// sys_create (const char *file, unsigned initial_size)
+// {
 
-}
+// }
 
-bool
-sys_remove (const char *file)
-{
+// bool
+// sys_remove (const char *file)
+// {
 
-}
+// }
 
 /* System call to open a file or file stream. */
 int
 sys_open (const char *file)
 {
+	struct thread * t = thread_current();
 	int fd = -1;
 	if(&t->open_files == NULL)						/* Check if list is not NULL */
 		return -1;
@@ -220,16 +223,17 @@ sys_open (const char *file)
 	}
 
 	/* Alocate new list element. */
-	struct open_file_elem * new_elem = malloc(sizeof(struct open_file_elem));
+	struct open_file_elem * new_elem = (struct open_file_elem *) malloc(sizeof(struct open_file_elem));
 
 	/* Generate fd depending on list values */
-	if(list_empty(t->open_files))
+	if(list_empty(&t->open_files))
 	{
 		fd = 2;	/* Default min value */
 	}
 
 	else		/* Else find highest value and add 1. */
 	{
+		struct list_elem * e;
 		for (e = list_begin (&t->open_files); e != list_end (&t->open_files);
            e = list_next (e))
         {
@@ -243,7 +247,7 @@ sys_open (const char *file)
 	/* Set up elem and add to list */
 	new_elem->fd = fd;
 	new_elem->file_ptr = open_file;
-	list_push_back(&thread_current()->open_files, &open_file_elem->elem);
+	list_push_back(&thread_current()->open_files, &new_elem->elem);
 	lock_release(&file_lock);
 	return fd;
 }
@@ -252,18 +256,20 @@ sys_open (const char *file)
 int
 sys_filesize (int fd)
 {
+	struct thread * t = thread_current();
 	bool found = false;
 	struct file * found_file_ptr;
 	lock_acquire(&file_lock);
 
 	/* Check if list exists and is not empty. */
-	if(t->open_files == NULL || list_empty(t->open_files))
+	if(&t->open_files == NULL || list_empty(&t->open_files))
 	{
 		lock_release(&file_lock);
 		return -1;
 	}
 
 	/* Search for the file. */
+	struct list_elem * e;
 	for (e = list_begin (&t->open_files); e != list_end (&t->open_files);
         e = list_next (e))
     {
@@ -288,34 +294,34 @@ sys_filesize (int fd)
     return size;
 }
 
-int
-sys_read (int fd, void *buffer, unsigned size)
-{
+// int
+// sys_read (int fd, void *buffer, unsigned size)
+// {
 
-}
+// }
 
-int
-sys_write (int fd, const void *buffer, unsigned size)
-{
+// int
+// sys_write (int fd, const void *buffer, unsigned size)
+// {
 
-}
+// }
 
-void
-sys_seek (int fd, unsigned position)
-{
+// void
+// sys_seek (int fd, unsigned position)
+// {
 
-}
+// }
 
-unsigned
-sys_tell (int fd)
-{
+// unsigned
+// sys_tell (int fd)
+// {
 
-}
+// }
 
-void
-sys_close (int fd)
-{
+// void
+// sys_close (int fd)
+// {
 
-}
+// }
 
 //- PROJECT 2 -//
