@@ -10,6 +10,14 @@ void syscall_init (void);
 
 struct lock file_lock;	/* Filesystem lock. */
 
+/*Going to use this to keep track of thread's files and the file descriptor list.*/
+struct thread_files
+{
+    struct list_elem elem;
+    struct file *file_address;
+    int file_desc;
+};
+
 void sys_halt (void);
 void sys_exit (int status);
 pid_t sys_exec (const char *cmd_line);
