@@ -14,6 +14,8 @@
 #include "filesys/file.h"
 #include "filesys/filesys.h"
 
+#define STDIN 0
+#define STDOUT 1
 
 static bool valid_user_pointer(const uint32_t * address);
 static uint32_t get_word(const uint32_t * address);
@@ -259,7 +261,7 @@ sys_open (const char *file)
 		fd = 2;	/* Default value */
 	}
 
-	else		/* Else find highest value and add 1. */
+	else		/* Else find highest value and add 1 (So that it will be unique). */
 	{
 		struct list_elem * e;
 		for (e = list_begin (&t->open_files); e != list_end (&t->open_files);
@@ -309,11 +311,46 @@ sys_filesize (int fd)
 
 // }
 
-// int
-// sys_write (int fd, const void *buffer, unsigned size)
-// {
+/* Writes size bytes from buffer to the open file fd. 
+	Returns the number of bytes actually written. */
+int
+sys_write (int fd, const void *buffer, unsigned size)
+{
+	int written_bytes = 0;
 
-// }
+	/* Error checking. */
+	if(size <= 0)
+		return written_bytes;
+
+	/* If writing to console... */
+	if(fd == STDOUT)
+	{
+		putbuf((char *)buffer, size);	/* Write to console. */
+		written_bytes = size;
+	}
+
+	/* If not writing to console. */
+	else
+	{
+		struct open_file_elem * open_file_ptr;
+		lock_acquire(&file_lock);
+
+		/* Search for the file. */
+		open_file_ptr = find_file(fd);
+
+		/* If file not found, return. */
+	    if(open_file_ptr == NULL)
+	    {
+	    	lock_release(&file_lock);
+	    	return -1;
+	    }
+
+	    /* Write to file and release lock. */
+	    written_bytes = file_write(open_file_ptr->file_ptr, buffer, size);
+	    lock_release(&file_lock);
+	}
+	return written_bytes;
+}
 
 /* Changes the next byte to be read 
 	in the given file to "offset". */
@@ -364,6 +401,7 @@ sys_seek (int fd, unsigned offset)
 //     return offset;
 // }
 // =======
+
 /* Returns the address of the file descriptor's open file if it's in the current thread's file descriptor list or -1 if not found. */
 static unsigned
 sys_tell (int fd)
