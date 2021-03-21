@@ -2,6 +2,8 @@
     "C_Cpp.formatting": "Disabled",
     "liveshare.allowGuestDebugControl": true,
     "files.associations": {
-        "complex": "c"
+        "complex": "c",
+        "interrupt.h": "c",
+        "file.h": "c"
     }
 }

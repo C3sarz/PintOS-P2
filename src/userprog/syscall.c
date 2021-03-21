@@ -14,6 +14,8 @@
 #include "filesys/file.h"
 #include "filesys/filesys.h"
 
+#define STDIN 0
+#define STDOUT 1
 
 static bool valid_user_pointer(const uint32_t * address);
 static uint32_t get_word(const uint32_t * address);
@@ -132,8 +134,19 @@ syscall_handler (struct intr_frame * f)
   	}
 
   	case SYS_READ:
-  	  	printf ("DEBUG, System call! SYS_READ \n");					///DEBUG///
-  		thread_exit ();		
+	    int *fd = f->esp + 1;
+		//Sanity checks on all arguments
+		if(!valid_user_pointer((uint32_t *)fd))
+			sys_exit(-1);
+		//Buffer SHOULD BE second argument.
+		void * buffer = f->esp + 2;
+		if(!valid_user_pointer((uint32_t *)buffer))
+			sys_exit(-1);
+		//Size is third on the stack(?)
+		unsigned int bufSize = f->esp + 3;
+		if(!valid_user_pointer((uint32_t *)bufSize))
+			sys_exit(-1);
+  	  	f->eax = sys_read(fd, buffer, bufSize);	
   		break;
 
   	case SYS_WRITE:
@@ -303,11 +316,41 @@ sys_filesize (int fd)
     return size;
 }
 
-// int
-// sys_read (int fd, void *buffer, unsigned size)
-// {
-
-// }
+ int
+ sys_read (int fd, void *buffer, unsigned size)
+ {
+	if(size <= 0)
+	{
+		return size;
+	}
+	//Reading in from STDIN(the keyboard)
+	if(fd == STDIN)
+	{
+		//Allocate a buffer starting at the passed in buffer
+		uint8_t *buf = (uint8_t) buffer;
+		unsigned i;
+		for(i = 0; i < size; i++)
+		{
+			buf[i] = input_getc(); //Built in input function
+		}
+		return size; //Return the buffer's size.
+	}
+	//Reading in from a file
+	lock_acquire(&file_lock);
+	struct file *file_pointer = find_file(fd);
+	//If pointer returned is null
+	if(file_pointer == NULL)
+	{
+		lock_release(&file_lock);
+		return -1;
+	}
+	//Read from file into buffer until size is reached.
+	int read_till = file_read(file_pointer, buffer, size);
+	//Release the file system lock.
+	lock_release(&file_lock);
+	//Return the offset it was read until.
+	return read_till;
+ }
 
 // int
 // sys_write (int fd, const void *buffer, unsigned size)
@@ -370,7 +413,7 @@ sys_tell (int fd)
  {
 	 lock_acquire(&file_lock);
 	//Simply says if we have no file descriptors, return -1 and release the lock.
-	if(list_empty(&thread_current()->fd_list))
+	if(list_empty(&thread_current()->open_files))
 	{
 		//Exit the critical section and return error -1.
 		lock_release(&file_lock);
@@ -379,15 +422,15 @@ sys_tell (int fd)
 
 	struct list_elem *iterator;
 	//Otherwise go through the list and check for the passed in file descriptor.
-	for(iterator = list_front(&thread_current()->fd_list); iterator != list_end(&thread_current()->fd_list); iterator = list_next(&thread_current()->fd_list))
+	for(iterator = list_front(&thread_current()->open_files); iterator != list_end(&thread_current()->open_files); iterator = list_next(&thread_current()->open_filels))
 	{
 		//Pull the thread files from the list.
-		struct thread_files *cur = list_entry(iterator, struct thread_files, elem);
+		struct open_file_elem *cur = list_entry(iterator, struct open_file_elem, elem);
 		//If we find the file descriptor in this thread.
-		if(cur->file_desc == fd)
+		if(cur->fd == fd)
 		{
 			//Place the address in the address variable using the file_tell call.
-			unsigned address = (unsigned) file_tell(cur->file_address);
+			unsigned address = (unsigned) file_tell(cur->file_ptr);
 			//Release the lock as we're done with the filesystem.
 			lock_release(&file_lock);
 			return address;

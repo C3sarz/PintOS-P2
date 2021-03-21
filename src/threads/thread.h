@@ -97,8 +97,6 @@ struct thread
     struct list children;         /* List with the children of this process. */
     struct list open_files;       /* List with all files opened by this process. */
     struct thread* parent;        /* Keep track of this thread/process's parent thread */
-    struct list fd_list;         /*List of file descriptors this thread holds*/
-    int current_fd;               /*Current fd the thread holds*/
 
     //-PROJECT 2-//
 
