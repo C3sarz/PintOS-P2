@@ -149,9 +149,11 @@ syscall_handler (struct intr_frame * f)
   		break;
 
     case SYS_CLOSE:
-  	  	printf ("DEBUG, System call! SYS_CLOSE \n");					///DEBUG///
-  		thread_exit ();	
+  	{
+  		int * fd = f->esp + 1;		/* Get file descriptor. */
+  		sys_close(*fd);				/* Close file. */
   		break;
+  	}
 
   	/* Invalid system call scenario: terminate process. */
   	default:
@@ -318,10 +320,35 @@ sys_filesize (int fd)
 
 // }
 
-// void
-// sys_close (int fd)
-// {
+/* Closes an open file given its fd. */
+void
+sys_close (int fd)
+{
+	struct thread * t = thread_current();
+	bool found = false;
+	struct file * found_file_ptr;
+	lock_acquire(&file_lock);
 
-// }
+	/* Search for the file. */
+	struct list_elem * e;
+	for (e = list_begin (&t->open_files); e != list_end (&t->open_files) && !found;
+        e = list_next (e))
+    {
+        struct open_file_elem * curr = list_entry (e, struct open_file_elem, elem);
+        if(curr->fd == fd)
+        {
+          	found = true;
+          	found_file_ptr = curr->file_ptr;
+          	list_remove(&curr->elem);			/* Remove file from list. */
+        }          	
+    }
+    if(!found)									/* If file not found return. */
+    {
+    	return;
+    }
+
+    file_close(found_file_ptr);					/* Close file and release lock. */
+    lock_release(&file_lock);
+}
 
 //- PROJECT 2 -//

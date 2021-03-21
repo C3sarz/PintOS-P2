@@ -31,8 +31,12 @@ Illegal memory accesses:
 	-validate pointer function
 	-get_word function
 	-added file lock
-	-added skeleton syscall handler
+	-functional syscall handler
 	-sys_halt function
+	-sys_open
+	-sys_close
+	-sys_filesize
+	-sys_exit partially (no children functionality)
 
 *-syscall.h:
 	
@@ -44,7 +48,6 @@ Illegal memory accesses:
 *-thread.h
 	-added children list property
 	-added open_files list property
-	-added args property
 
 *-file.h
 	-added new open_file_elem struct.

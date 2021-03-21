@@ -95,8 +95,8 @@ struct thread
 
     ///PROJECT 2///
 
-    struct list children;
-    struct list open_files;
+    struct list children;         /* List with the children of this process. */
+    struct list open_files;       /* List with all files opened by this process. */
 
     //-PROJECT 2-//
 
