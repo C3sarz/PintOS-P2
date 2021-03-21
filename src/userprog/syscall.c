@@ -338,31 +338,65 @@ sys_seek (int fd, unsigned offset)
 	lock_release(&file_lock);
 }
 
-/* Returns the offset of the next byte to be read 
-	or written in the file given by fd. */
-unsigned
-sys_tell (int fd)
-{
-	struct open_file_elem * open_file_ptr;
-	lock_acquire(&file_lock);
-	unsigned offset;
+// /* Returns the offset of the next byte to be read 
+// 	or written in the file given by fd. */
+// unsigned
+// sys_tell (int fd)
+// {
+// 	struct open_file_elem * open_file_ptr;
+// 	lock_acquire(&file_lock);
+// 	unsigned offset;
 
-	/* Search for the file. */
-	open_file_ptr = find_file(fd);
+// 	/* Search for the file. */
+// 	open_file_ptr = find_file(fd);
 
-	/* If file not found, return. */
-    if(open_file_ptr == NULL)
-    {
-    	lock_release(&file_lock);
-    	return 0;	/* Error case ? */
-    }
+// 	 If file not found, return. 
+//     if(open_file_ptr == NULL)
+//     {
+//     	lock_release(&file_lock);
+//     	return 0;	/* Error case ? */
+//     }
 	
-	/* Find offset with filesys function. */
-    offset = file_tell(open_file_ptr->file_ptr);
+// 	/* Find offset with filesys function. */
+//     offset = file_tell(open_file_ptr->file_ptr);
 
-    lock_release(&file_lock);
-    return offset;
-}
+//     lock_release(&file_lock);
+//     return offset;
+// }
+// =======
+/* Returns the address of the file descriptor's open file if it's in the current thread's file descriptor list or -1 if not found. */
+static unsigned
+sys_tell (int fd)
+ {
+	 lock_acquire(&file_lock);
+	//Simply says if we have no file descriptors, return -1 and release the lock.
+	if(list_empty(&thread_current()->fd_list))
+	{
+		//Exit the critical section and return error -1.
+		lock_release(&file_lock);
+		return -1;
+	}
+
+	struct list_elem *iterator;
+	//Otherwise go through the list and check for the passed in file descriptor.
+	for(iterator = list_front(&thread_current()->fd_list); iterator != list_end(&thread_current()->fd_list); iterator = list_next(&thread_current()->fd_list))
+	{
+		//Pull the thread files from the list.
+		struct thread_files *cur = list_entry(iterator, struct thread_files, elem);
+		//If we find the file descriptor in this thread.
+		if(cur->file_desc == fd)
+		{
+			//Place the address in the address variable using the file_tell call.
+			unsigned address = (unsigned) file_tell(cur->file_address);
+			//Release the lock as we're done with the filesystem.
+			lock_release(&file_lock);
+			return address;
+		}
+	}
+	//If we don't find the address, still have to release the lock.
+	lock_release(&file_lock);
+	return -1;
+ }
 
 /* Closes an open file given its fd. */
 void
@@ -412,4 +446,27 @@ find_file(int fd)
     return NULL;			/* File not found. */
 }
 
+// /*Helper function to check a given address and see if it's a valid user address.  Returns pointer to that address.
+// Uses some functionality of vaddr in threads folder*/
+// void* check_valid(const void *addr)
+// {
+// 	if(!is_user_vaddr(addr))
+// 	{
+
+// 		//Exit the process if not a valid user address.
+// 		sys_exit(-1);
+// 		return 0;
+
+// 	}
+// 	//Represents the address we will return if valid
+// 	void *address_returned = pagedir_get_page(thread_current()->pagedir, addr);
+// 	//If our address returned is not valid, we exit again.
+// 	if(!address_returned)
+// 	{
+// 		sys_exit(-1);
+// 		return 0;
+// 	}
+// 	//Return the valid user address if it's valid.
+// 	return address_returned;
+// }
 //- PROJECT 2 -//
