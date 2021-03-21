@@ -37,6 +37,7 @@ Illegal memory accesses:
 	-sys_close
 	-sys_filesize
 	-sys_exit partially (no children functionality)
+	-sys_tell completed
 
 *-syscall.h:
 	
@@ -48,6 +49,9 @@ Illegal memory accesses:
 *-thread.h
 	-added children list property
 	-added open_files list property
+	-added parent thread property
+	-added fd_list list property to represent file descriptors of thread
+	-added current_fd property to represent current fd(may not need)?
 
 *-file.h
 	-added new open_file_elem struct.
