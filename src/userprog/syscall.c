@@ -123,8 +123,11 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_FILESIZE:
   	{
-  		int * fd = f->esp + 1;		/* Get file descriptor. */
-  		f->eax = sys_filesize(*fd);	/* Find size. */
+  		int * fd = f->esp + 1;					/* Get file descriptor. */
+  		if(!valid_user_pointer((uint32_t *)fd))	/* Check pointer validity. */		
+  			sys_exit(-1);
+
+  		f->eax = sys_filesize(*fd);				/* Find size. */
   		break;
   	}
 
@@ -139,19 +142,35 @@ syscall_handler (struct intr_frame * f)
   		break;
 
   	case SYS_SEEK:
-  	  	printf ("DEBUG, System call! SYS_SEEK \n");					///DEBUG///
-  		thread_exit ();	
+  	{
+  		int * fd = f->esp + 1;					/* Get file descriptor. */
+  		unsigned * offset = f->esp + 2;			/* Get position offset. */
+
+  		if(!valid_user_pointer((uint32_t *)fd)	/* Check pointer validity. */
+  		|| !valid_user_pointer((uint32_t *)offset))		
+  			sys_exit(-1);
+
+  		sys_seek(*fd, *offset);					/* Call function. */			
   		break;
+  	}
 
     case SYS_TELL:
-  	  	printf ("DEBUG, System call! SYS_TELL \n");					///DEBUG///
-  		thread_exit ();	
+    {
+  	  	int * fd = f->esp + 1;					/* Get file descriptor. */
+  		if(!valid_user_pointer((uint32_t *)fd))	/* Check pointer validity. */		
+  			sys_exit(-1);
+
+    	f->eax = sys_tell(*fd);					/* Call function. */
   		break;
+  	}
 
     case SYS_CLOSE:
   	{
-  		int * fd = f->esp + 1;		/* Get file descriptor. */
-  		sys_close(*fd);				/* Close file. */
+  		int * fd = f->esp + 1;					/* Get file descriptor. */
+  		if(!valid_user_pointer((uint32_t *)fd))	/* Check pointer validity. */		
+  			sys_exit(-1);
+
+  		sys_close(*fd);							/* Close file. */
   		break;
   	}
 
@@ -227,10 +246,17 @@ sys_open (const char *file)
 	/* Alocate new list element. */
 	struct open_file_elem * new_elem = (struct open_file_elem *) malloc(sizeof(struct open_file_elem));
 
+	/* If malloc fails return error. */
+	if(new_elem == NULL)
+	{
+		lock_release(&file_lock);
+		return -1;
+	}
+
 	/* Generate fd depending on list values */
 	if(list_empty(&t->open_files))
 	{
-		fd = 2;	/* Default min value */
+		fd = 2;	/* Default value */
 	}
 
 	else		/* Else find highest value and add 1. */
@@ -258,40 +284,21 @@ sys_open (const char *file)
 int
 sys_filesize (int fd)
 {
-	struct thread * t = thread_current();
-	bool found = false;
-	struct file * found_file_ptr;
+	struct open_file_elem * open_file_ptr;
 	lock_acquire(&file_lock);
 
-	/* Check if list exists and is not empty. */
-	if(&t->open_files == NULL || list_empty(&t->open_files))
-	{
-		lock_release(&file_lock);
-		return -1;
-	}
-
 	/* Search for the file. */
-	struct list_elem * e;
-	for (e = list_begin (&t->open_files); e != list_end (&t->open_files);
-        e = list_next (e))
-    {
-        struct open_file_elem * curr = list_entry (e, struct open_file_elem, elem);
-        if(curr->fd == fd)
-        {
-          	found = true;
-          	found_file_ptr = curr->file_ptr;
-        }          	
-    }
+	open_file_ptr = find_file(fd);
 
     /* If file is not found return ERROR. */
-    if(!found)
+    if(open_file_ptr == NULL)
     {
     	lock_release(&file_lock);
     	return -1;
     }
 
     /* Find size, release lock, and return size in bytes. */
-    int size = file_length(found_file_ptr);
+    int size = file_length(open_file_ptr->file_ptr);
     lock_release(&file_lock);
     return size;
 }
@@ -308,47 +315,101 @@ sys_filesize (int fd)
 
 // }
 
-// void
-// sys_seek (int fd, unsigned position)
-// {
+/* Changes the next byte to be read 
+	in the given file to "offset". */
+void
+sys_seek (int fd, unsigned offset)
+{
+	struct open_file_elem * open_file_ptr;
+	lock_acquire(&file_lock);
 
-// }
+	/* Search for the file. */
+	open_file_ptr = find_file(fd);
 
-// unsigned
-// sys_tell (int fd)
-// {
+	/* If file not found, return. */
+    if(open_file_ptr == NULL)
+    {
+    	lock_release(&file_lock);
+    	return;
+    }
 
-// }
+    /* Using given filesystem function for seek. */
+    file_seek(open_file_ptr->file_ptr, offset);
+	lock_release(&file_lock);
+}
+
+/* Returns the offset of the next byte to be read 
+	or written in the file given by fd. */
+unsigned
+sys_tell (int fd)
+{
+	struct open_file_elem * open_file_ptr;
+	lock_acquire(&file_lock);
+	unsigned offset;
+
+	/* Search for the file. */
+	open_file_ptr = find_file(fd);
+
+	/* If file not found, return. */
+    if(open_file_ptr == NULL)
+    {
+    	lock_release(&file_lock);
+    	return 0;	/* Error case ? */
+    }
+	
+	/* Find offset with filesys function. */
+    offset = file_tell(open_file_ptr->file_ptr);
+
+    lock_release(&file_lock);
+    return offset;
+}
 
 /* Closes an open file given its fd. */
 void
 sys_close (int fd)
 {
-	struct thread * t = thread_current();
-	bool found = false;
-	struct file * found_file_ptr;
+	struct open_file_elem * open_file_ptr;
 	lock_acquire(&file_lock);
 
 	/* Search for the file. */
+	open_file_ptr = find_file(fd);
+
+	/* If file not found, return. */
+    if(open_file_ptr == NULL)
+    {
+    	lock_release(&file_lock);
+    	return;
+    }
+
+    file_close(open_file_ptr->file_ptr);		/* Close file and release lock. */
+    list_remove(&open_file_ptr->elem);			/* Remove file from list. */
+    free(open_file_ptr);						/* Free memory for open file object. */
+    lock_release(&file_lock);
+}
+
+/* Find a file opened by the given process and returns its open file element.
+	Returns NULL if the file is not found. */
+struct open_file_elem *
+find_file(int fd)
+{
+	struct thread * t = thread_current();
 	struct list_elem * e;
-	for (e = list_begin (&t->open_files); e != list_end (&t->open_files) && !found;
+
+	/* Check if list exists and is not empty. */
+	if(&t->open_files == NULL || list_empty(&t->open_files))
+		return NULL;
+
+	/* Iterate through list to find matching file. */
+	for (e = list_begin (&t->open_files); e != list_end (&t->open_files);
         e = list_next (e))
     {
         struct open_file_elem * curr = list_entry (e, struct open_file_elem, elem);
         if(curr->fd == fd)
         {
-          	found = true;
-          	found_file_ptr = curr->file_ptr;
-          	list_remove(&curr->elem);			/* Remove file from list. */
+          	return curr;	/* Found file. */
         }          	
     }
-    if(!found)									/* If file not found return. */
-    {
-    	return;
-    }
-
-    file_close(found_file_ptr);					/* Close file and release lock. */
-    lock_release(&file_lock);
+    return NULL;			/* File not found. */
 }
 
 //- PROJECT 2 -//
