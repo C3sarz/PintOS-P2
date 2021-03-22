@@ -1,16 +1,17 @@
-#include "userprog/syscall.h"
-#include "threads/thread.h"
 #include <stdio.h>
 #include <list.h>
 #include <inttypes.h>
 #include <stdbool.h>
-#include "threads/malloc.h"
 #include <syscall-nr.h>
+#include "userprog/syscall.h"
+#include "userprog/pagedir.h"
+#include "threads/malloc.h"
 #include "threads/interrupt.h"
-#include "devices/shutdown.h"
+#include "threads/thread.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
-#include "userprog/pagedir.h"
+#include "devices/shutdown.h"
+#include "devices/input.h"
 #include "filesys/file.h"
 #include "filesys/filesys.h"
 
@@ -78,7 +79,7 @@ get_word(const uint32_t * address)
 
 /* Handles syscall requests */
 static void
-syscall_handler (struct intr_frame * f) 
+syscall_handler (struct intr_frame * f)
 {
   int esp_word = get_word(f->esp);		/* Get system call number from stack pointer. */
   switch(esp_word)
@@ -115,7 +116,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_OPEN:
   	{
-		char * filename = f->esp + 1;		/* Get filename. */
+		char * filename = f->esp + 1;					/* Get filename. */
   		if(!valid_user_pointer((uint32_t *)filename))	/* Check pointer validity. */		
   			sys_exit(-1);
   		
@@ -134,25 +135,40 @@ syscall_handler (struct intr_frame * f)
   	}
 
   	case SYS_READ:
+  	{
 	    int *fd = f->esp + 1;
 		//Sanity checks on all arguments
 		if(!valid_user_pointer((uint32_t *)fd))
 			sys_exit(-1);
+
 		//Buffer SHOULD BE second argument.
 		void * buffer = f->esp + 2;
 		if(!valid_user_pointer((uint32_t *)buffer))
 			sys_exit(-1);
+
 		//Size is third on the stack(?)
-		unsigned int bufSize = f->esp + 3;
+		unsigned int * bufSize = f->esp + 3;
 		if(!valid_user_pointer((uint32_t *)bufSize))
 			sys_exit(-1);
-  	  	f->eax = sys_read(fd, buffer, bufSize);	
+
+  	  	f->eax = sys_read(*fd, buffer, *bufSize);	
   		break;
+  	}
 
   	case SYS_WRITE:
-  	  	printf ("DEBUG, System call! SYS_WRITE \n");					///DEBUG///
-  		thread_exit ();	
+  	{
+  	  	int * fd = f->esp + 1;					/* Get file descriptor. */
+  		void * buffer = f->esp + 2;				/* Get buffer address. */
+  		unsigned * size = f->esp + 3;			/* Get file descriptor. */
+
+  		if(!valid_user_pointer((uint32_t *)fd)	/* Check pointer validity. */
+  		|| !valid_user_pointer((uint32_t *)buffer)
+  		|| !valid_user_pointer((uint32_t *)size))				
+  			sys_exit(-1);
+
+  		sys_write(*fd, buffer, *size);			/* Call function. */
   		break;
+  	}
 
   	case SYS_SEEK:
   	{
@@ -444,7 +460,7 @@ sys_seek (int fd, unsigned offset)
 // =======
 
 /* Returns the address of the file descriptor's open file if it's in the current thread's file descriptor list or -1 if not found. */
-static unsigned
+unsigned
 sys_tell (int fd)
  {
 	 lock_acquire(&file_lock);
@@ -458,7 +474,7 @@ sys_tell (int fd)
 
 	struct list_elem *iterator;
 	//Otherwise go through the list and check for the passed in file descriptor.
-	for(iterator = list_front(&thread_current()->open_files); iterator != list_end(&thread_current()->open_files); iterator = list_next(&thread_current()->open_filels))
+	for(iterator = list_front(&thread_current()->open_files); iterator != list_end(&thread_current()->open_files); iterator = list_next(&thread_current()->open_files))
 	{
 		//Pull the thread files from the list.
 		struct open_file_elem *cur = list_entry(iterator, struct open_file_elem, elem);

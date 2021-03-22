@@ -37,6 +37,6 @@ struct open_file_elem
 	struct list_elem elem;      /* List element. */
 };
 
-//-PROJECT 2 -//
+//-PROJECT 2-//
 
 #endif /* filesys/file.h */

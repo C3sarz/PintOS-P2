@@ -5,10 +5,24 @@
 
 ==== Observations ====
 
+Jack:
 
-load() fails at:
-	Failed at load segment, i = 1
--Linux problem, must use the beocat system (redhat).
+../../userprog/syscall.c: In function ‘sys_read’:
+../../userprog/syscall.c:346:18: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+   uint8_t *buf = (uint8_t) buffer;
+                  ^
+../../userprog/syscall.c:346:18: warning: initialization makes pointer from integer without a cast [-Wint-conversion]
+../../userprog/syscall.c:356:30: warning: initialization from incompatible pointer type [-Wincompatible-pointer-types]
+  struct file *file_pointer = find_file(fd);
+                              ^~~~~~~~~
+../../userprog/syscall.c: In function ‘sys_tell’:
+../../userprog/syscall.c:477:134: warning: passing argument 1 of ‘list_next’ from incompatible pointer type [-Wincompatible-pointer-types]
+ _current()->open_files); iterator != list_end(&thread_current()->open_files); iterator = list_next(&thread_current()->open_files))
+                                                                                                    ^
+In file included from ../../userprog/syscall.c:2:0:
+../../lib/kernel/list.h:129:19: note: expected ‘struct list_elem *’ but argument is of type ‘struct list *’
+ struct list_elem *list_next (struct list_elem *);                   ^~~~~~~~~
+
 
 Illegal memory accesses:
 	-How do we release memory and pages after crashing the process??
