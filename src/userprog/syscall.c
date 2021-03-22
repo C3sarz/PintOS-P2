@@ -33,7 +33,6 @@ syscall_init (void)
 static bool
 valid_user_pointer(const uint32_t * address)
 {
-
   /* Check null pointer */
   if(address == NULL)
     return false;
@@ -85,17 +84,23 @@ syscall_handler (struct intr_frame * f)
   switch(esp_word)
   {
   	case SYS_HALT:
+  	{
   		sys_halt();	/* Halt system. */
   		break;
+  	}
 
   	case SYS_EXIT:
+  	{
   		sys_exit(get_word(f->esp+1));	/* Exit status is the first parameter. */
   		break;
+  	}
 
   	case SYS_EXEC:
+  	{
    		printf ("DEBUG, System call! SYS_EXEC \n");					///DEBUG///
   		thread_exit ();												///DEBUG///
   		break;
+  	}
 
   	case SYS_WAIT:
   	{
@@ -105,14 +110,28 @@ syscall_handler (struct intr_frame * f)
   	}
 
   	case SYS_CREATE:
-  	  	printf ("DEBUG, System call! SYS_CREATE \n");					///DEBUG///
-  		thread_exit ();													///DEBUG///
+  	{
+  		char * filename = f->esp + 1;					/* Get file name. */
+  		unsigned * filesize = f->esp + 2;				/* Get size offset. */
+
+  		if(!valid_user_pointer((uint32_t *)filename)	/* Check pointer validity. */
+  		|| !valid_user_pointer((uint32_t *)filesize))		
+  			sys_exit(-1);
+
+  		sys_create(filename, *filesize);				/* Call function. */	
   		break;
+  	}
 
   	case SYS_REMOVE:
-  	  	printf ("DEBUG, System call! SYS_REMOVE \n");					///DEBUG///
-  		thread_exit ();													///DEBUG///
+  	{
+  		char * filename = f->esp + 1;					/* Get file name. */
+
+  		if(!valid_user_pointer((uint32_t *)filename))	/* Check pointer validity. */	
+  			sys_exit(-1);
+
+  		sys_remove(filename);							/* Call function. */	
   		break;
+  	}
 
   	case SYS_OPEN:
   	{
@@ -205,9 +224,11 @@ syscall_handler (struct intr_frame * f)
 
   	/* Invalid system call scenario: terminate process. */
   	default:
+  	{
   		printf("Invalid system call: %d\n", esp_word);
   		thread_exit();
   		break;		
+  	}
   }
 }
 
@@ -241,17 +262,33 @@ sys_exit (int status)
 
 // }
 
-// bool
-// sys_create (const char *file, unsigned initial_size)
-// {
+/* Creates a new file os size INITIAL_SIZE. */
+bool
+sys_create (const char *filename , unsigned initial_size)
+{
+	bool result = false;
+	lock_acquire(&file_lock);
 
-// }
+	/* Create file. */
+	result = filesys_create(filename, initial_size);
 
-// bool
-// sys_remove (const char *file)
-// {
+	lock_release(&file_lock);
+	return result;
+}
 
-// }
+/* Removes a file named FILENAME. */
+bool
+sys_remove (const char * filename)
+{
+	bool result = false;
+	lock_acquire(&file_lock);
+
+	/* Remove file. */
+	result = filesys_remove(filename);
+
+	lock_release(&file_lock);
+	return result;
+}
 
 /* System call to open a file or file stream. */
 int
