@@ -134,7 +134,8 @@ syscall_handler (struct intr_frame * f)
   	}
 
   	case SYS_READ:
-	    int *fd = f->esp + 1;
+	  {
+	    int * fd = f->esp + 1;
 		//Sanity checks on all arguments
 		if(!valid_user_pointer((uint32_t *)fd))
 			sys_exit(-1);
@@ -148,6 +149,7 @@ syscall_handler (struct intr_frame * f)
 			sys_exit(-1);
   	  	f->eax = sys_read(fd, buffer, bufSize);	
   		break;
+	  }
 
   	case SYS_WRITE:
   	  	printf ("DEBUG, System call! SYS_WRITE \n");					///DEBUG///
@@ -408,7 +410,7 @@ sys_seek (int fd, unsigned offset)
 // }
 // =======
 /* Returns the address of the file descriptor's open file if it's in the current thread's file descriptor list or -1 if not found. */
-static unsigned
+unsigned
 sys_tell (int fd)
  {
 	 lock_acquire(&file_lock);
@@ -422,7 +424,7 @@ sys_tell (int fd)
 
 	struct list_elem *iterator;
 	//Otherwise go through the list and check for the passed in file descriptor.
-	for(iterator = list_front(&thread_current()->open_files); iterator != list_end(&thread_current()->open_files); iterator = list_next(&thread_current()->open_filels))
+	for(iterator = list_front(&thread_current()->open_files); iterator != list_end(&thread_current()->open_files); iterator = list_next(&thread_current()->open_files))
 	{
 		//Pull the thread files from the list.
 		struct open_file_elem *cur = list_entry(iterator, struct open_file_elem, elem);
