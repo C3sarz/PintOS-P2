@@ -1,16 +1,17 @@
-#include "userprog/syscall.h"
-#include "threads/thread.h"
 #include <stdio.h>
 #include <list.h>
 #include <inttypes.h>
 #include <stdbool.h>
-#include "threads/malloc.h"
 #include <syscall-nr.h>
+#include "userprog/syscall.h"
+#include "userprog/pagedir.h"
+#include "threads/malloc.h"
 #include "threads/interrupt.h"
-#include "devices/shutdown.h"
+#include "threads/thread.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
-#include "userprog/pagedir.h"
+#include "devices/shutdown.h"
+#include "devices/input.h"
 #include "filesys/file.h"
 #include "filesys/filesys.h"
 
@@ -32,7 +33,6 @@ syscall_init (void)
 static bool
 valid_user_pointer(const uint32_t * address)
 {
-
   /* Check null pointer */
   if(address == NULL)
     return false;
@@ -78,23 +78,29 @@ get_word(const uint32_t * address)
 
 /* Handles syscall requests */
 static void
-syscall_handler (struct intr_frame * f) 
+syscall_handler (struct intr_frame * f)
 {
   int esp_word = get_word(f->esp);		/* Get system call number from stack pointer. */
   switch(esp_word)
   {
   	case SYS_HALT:
+  	{
   		sys_halt();	/* Halt system. */
   		break;
+  	}
 
   	case SYS_EXIT:
+  	{
   		sys_exit(get_word(f->esp+1));	/* Exit status is the first parameter. */
   		break;
+  	}
 
   	case SYS_EXEC:
+  	{
    		printf ("DEBUG, System call! SYS_EXEC \n");					///DEBUG///
   		thread_exit ();												///DEBUG///
   		break;
+  	}
 
   	case SYS_WAIT:
   	{
@@ -104,18 +110,32 @@ syscall_handler (struct intr_frame * f)
   	}
 
   	case SYS_CREATE:
-  	  	printf ("DEBUG, System call! SYS_CREATE \n");					///DEBUG///
-  		thread_exit ();													///DEBUG///
+  	{
+  		char * filename = f->esp + 1;					/* Get file name. */
+  		unsigned * filesize = f->esp + 2;				/* Get size offset. */
+
+  		if(!valid_user_pointer((uint32_t *)filename)	/* Check pointer validity. */
+  		|| !valid_user_pointer((uint32_t *)filesize))		
+  			sys_exit(-1);
+
+  		sys_create(filename, *filesize);				/* Call function. */	
   		break;
+  	}
 
   	case SYS_REMOVE:
-  	  	printf ("DEBUG, System call! SYS_REMOVE \n");					///DEBUG///
-  		thread_exit ();													///DEBUG///
+  	{
+  		char * filename = f->esp + 1;					/* Get file name. */
+
+  		if(!valid_user_pointer((uint32_t *)filename))	/* Check pointer validity. */	
+  			sys_exit(-1);
+
+  		sys_remove(filename);							/* Call function. */	
   		break;
+  	}
 
   	case SYS_OPEN:
   	{
-		char * filename = f->esp + 1;		/* Get filename. */
+		char * filename = f->esp + 1;					/* Get filename. */
   		if(!valid_user_pointer((uint32_t *)filename))	/* Check pointer validity. */		
   			sys_exit(-1);
   		
@@ -139,22 +159,35 @@ syscall_handler (struct intr_frame * f)
 		//Sanity checks on all arguments
 		if(!valid_user_pointer((uint32_t *)fd))
 			sys_exit(-1);
+
 		//Buffer SHOULD BE second argument.
 		void * buffer = f->esp + 2;
 		if(!valid_user_pointer((uint32_t *)buffer))
 			sys_exit(-1);
+
 		//Size is third on the stack(?)
-		unsigned int bufSize = f->esp + 3;
+		unsigned int * bufSize = f->esp + 3;
 		if(!valid_user_pointer((uint32_t *)bufSize))
 			sys_exit(-1);
-  	  	f->eax = sys_read(fd, buffer, bufSize);	
+
+  	  	f->eax = sys_read(*fd, buffer, *bufSize);	
   		break;
 	  }
 
   	case SYS_WRITE:
-  	  	printf ("DEBUG, System call! SYS_WRITE \n");					///DEBUG///
-  		thread_exit ();	
+  	{
+  	  	int * fd = f->esp + 1;					/* Get file descriptor. */
+  		void * buffer = f->esp + 2;				/* Get buffer address. */
+  		unsigned * size = f->esp + 3;			/* Get file descriptor. */
+
+  		if(!valid_user_pointer((uint32_t *)fd)	/* Check pointer validity. */
+  		|| !valid_user_pointer((uint32_t *)buffer)
+  		|| !valid_user_pointer((uint32_t *)size))				
+  			sys_exit(-1);
+
+  		sys_write(*fd, buffer, *size);			/* Call function. */
   		break;
+  	}
 
   	case SYS_SEEK:
   	{
@@ -191,9 +224,11 @@ syscall_handler (struct intr_frame * f)
 
   	/* Invalid system call scenario: terminate process. */
   	default:
+  	{
   		printf("Invalid system call: %d\n", esp_word);
   		thread_exit();
   		break;		
+  	}
   }
 }
 
@@ -227,17 +262,33 @@ sys_exit (int status)
 
 // }
 
-// bool
-// sys_create (const char *file, unsigned initial_size)
-// {
+/* Creates a new file os size INITIAL_SIZE. */
+bool
+sys_create (const char *filename , unsigned initial_size)
+{
+	bool result = false;
+	lock_acquire(&file_lock);
 
-// }
+	/* Create file. */
+	result = filesys_create(filename, initial_size);
 
-// bool
-// sys_remove (const char *file)
-// {
+	lock_release(&file_lock);
+	return result;
+}
 
-// }
+/* Removes a file named FILENAME. */
+bool
+sys_remove (const char * filename)
+{
+	bool result = false;
+	lock_acquire(&file_lock);
+
+	/* Remove file. */
+	result = filesys_remove(filename);
+
+	lock_release(&file_lock);
+	return result;
+}
 
 /* System call to open a file or file stream. */
 int
@@ -274,7 +325,7 @@ sys_open (const char *file)
 		fd = 2;	/* Default value */
 	}
 
-	else		/* Else find highest value and add 1. */
+	else		/* Else find highest value and add 1 (So that it will be unique). */
 	{
 		struct list_elem * e;
 		for (e = list_begin (&t->open_files); e != list_end (&t->open_files);
@@ -329,7 +380,7 @@ sys_filesize (int fd)
 	if(fd == STDIN)
 	{
 		//Allocate a buffer starting at the passed in buffer
-		uint8_t *buf = (uint8_t) buffer;
+		uint8_t *buf = (uint8_t *) buffer;
 		unsigned i;
 		for(i = 0; i < size; i++)
 		{
@@ -339,7 +390,7 @@ sys_filesize (int fd)
 	}
 	//Reading in from a file
 	lock_acquire(&file_lock);
-	struct file *file_pointer = find_file(fd);
+	struct open_file_elem *file_pointer = find_file(fd);
 	//If pointer returned is null
 	if(file_pointer == NULL)
 	{
@@ -347,18 +398,53 @@ sys_filesize (int fd)
 		return -1;
 	}
 	//Read from file into buffer until size is reached.
-	int read_till = file_read(file_pointer, buffer, size);
+	int read_till = file_read(file_pointer->file_ptr, buffer, size);
 	//Release the file system lock.
 	lock_release(&file_lock);
 	//Return the offset it was read until.
 	return read_till;
  }
 
-// int
-// sys_write (int fd, const void *buffer, unsigned size)
-// {
+/* Writes size bytes from buffer to the open file fd. 
+	Returns the number of bytes actually written. */
+int
+sys_write (int fd, const void *buffer, unsigned size)
+{
+	int written_bytes = 0;
 
-// }
+	/* Error checking. */
+	if(size <= 0)
+		return written_bytes;
+
+	/* If writing to console... */
+	if(fd == STDOUT)
+	{
+		putbuf((char *)buffer, size);	/* Write to console. */
+		written_bytes = size;
+	}
+
+	/* If not writing to console. */
+	else
+	{
+		struct open_file_elem * open_file_ptr;
+		lock_acquire(&file_lock);
+
+		/* Search for the file. */
+		open_file_ptr = find_file(fd);
+
+		/* If file not found, return. */
+	    if(open_file_ptr == NULL)
+	    {
+	    	lock_release(&file_lock);
+	    	return -1;
+	    }
+
+	    /* Write to file and release lock. */
+	    written_bytes = file_write(open_file_ptr->file_ptr, buffer, size);
+	    lock_release(&file_lock);
+	}
+	return written_bytes;
+}
 
 /* Changes the next byte to be read 
 	in the given file to "offset". */
@@ -409,6 +495,7 @@ sys_seek (int fd, unsigned offset)
 //     return offset;
 // }
 // =======
+
 /* Returns the address of the file descriptor's open file if it's in the current thread's file descriptor list or -1 if not found. */
 unsigned
 sys_tell (int fd)
@@ -424,7 +511,7 @@ sys_tell (int fd)
 
 	struct list_elem *iterator;
 	//Otherwise go through the list and check for the passed in file descriptor.
-	for(iterator = list_front(&thread_current()->open_files); iterator != list_end(&thread_current()->open_files); iterator = list_next(&thread_current()->open_files))
+	for(iterator = list_begin(&thread_current()->open_files); iterator != list_end(&thread_current()->open_files); iterator = list_next(iterator))
 	{
 		//Pull the thread files from the list.
 		struct open_file_elem *cur = list_entry(iterator, struct open_file_elem, elem);
