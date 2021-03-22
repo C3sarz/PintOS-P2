@@ -27,6 +27,9 @@ In file included from ../../userprog/syscall.c:2:0:
 Illegal memory accesses:
 	-How do we release memory and pages after crashing the process??
 
+-Buffer user memory
+	- We should probably verify if the whole length of the given buffers are valid.
+
 ==== Modified files ====
 
 *-process.c:
@@ -53,8 +56,7 @@ Illegal memory accesses:
 	-sys_exit partially (no children functionality)
 	-sys_tell completed
 
-*-syscall.h:
-	
+*-syscall.h:	
 	-added function prototypes
 
 *-thread.c

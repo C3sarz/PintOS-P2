@@ -91,6 +91,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_EXIT:
   	{
+  		printf ("DEBUG, System call! SYS_EXIT \n");					///DEBUG///
   		sys_exit(get_word(f->esp+1));	/* Exit status is the first parameter. */
   		break;
   	}
@@ -111,6 +112,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_CREATE:
   	{
+  		printf ("DEBUG, System call! SYS_CREATE \n");					///DEBUG///
   		char * filename = f->esp + 1;					/* Get file name. */
   		unsigned * filesize = f->esp + 2;				/* Get size offset. */
 
@@ -124,6 +126,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_REMOVE:
   	{
+  		printf ("DEBUG, System call! SYS_REMOVE \n");					///DEBUG///
   		char * filename = f->esp + 1;					/* Get file name. */
 
   		if(!valid_user_pointer((uint32_t *)filename))	/* Check pointer validity. */	
@@ -135,6 +138,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_OPEN:
   	{
+  		printf ("DEBUG, System call! SYS_OPEN \n");					///DEBUG///
 		char * filename = f->esp + 1;					/* Get filename. */
   		if(!valid_user_pointer((uint32_t *)filename))	/* Check pointer validity. */		
   			sys_exit(-1);
@@ -145,6 +149,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_FILESIZE:
   	{
+  		printf ("DEBUG, System call! SYS_FILESIZE \n");					///DEBUG///
   		int * fd = f->esp + 1;					/* Get file descriptor. */
   		if(!valid_user_pointer((uint32_t *)fd))	/* Check pointer validity. */		
   			sys_exit(-1);
@@ -155,6 +160,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_READ:
 	  {
+  		printf ("DEBUG, System call! SYS_READ \n");					///DEBUG///
 	    int * fd = f->esp + 1;
 		//Sanity checks on all arguments
 		if(!valid_user_pointer((uint32_t *)fd))
@@ -176,6 +182,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_WRITE:
   	{
+  		printf ("DEBUG, System call! SYS_WRITE \n");					///DEBUG///
   	  	int * fd = f->esp + 1;					/* Get file descriptor. */
   		void * buffer = f->esp + 2;				/* Get buffer address. */
   		unsigned * size = f->esp + 3;			/* Get file descriptor. */
@@ -191,6 +198,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_SEEK:
   	{
+  		printf ("DEBUG, System call! SYS_SEEK \n");					///DEBUG///
   		int * fd = f->esp + 1;					/* Get file descriptor. */
   		unsigned * offset = f->esp + 2;			/* Get position offset. */
 
@@ -204,6 +212,7 @@ syscall_handler (struct intr_frame * f)
 
     case SYS_TELL:
     {
+  		printf ("DEBUG, System call! SYS_TELL \n");					///DEBUG///
   	  	int * fd = f->esp + 1;					/* Get file descriptor. */
   		if(!valid_user_pointer((uint32_t *)fd))	/* Check pointer validity. */		
   			sys_exit(-1);
@@ -214,6 +223,7 @@ syscall_handler (struct intr_frame * f)
 
     case SYS_CLOSE:
   	{
+  		printf ("DEBUG, System call! SYS_CLOSE \n");					///DEBUG///
   		int * fd = f->esp + 1;					/* Get file descriptor. */
   		if(!valid_user_pointer((uint32_t *)fd))	/* Check pointer validity. */		
   			sys_exit(-1);
