@@ -504,12 +504,16 @@ setup_stack (void **esp, struct arguments * args)
   char * token;
   int i;
 
+  int used_bytes = 0;
+
   //Placing the words at the top of the stack (in right to left order but it doesnt matter at this point since we'll reference the data from pointer later)
   for(i = args->argc - 1; i >= 0; i--)
   {
     *esp -= strlen(args->argv[i] + 1); //sizeof(char)???? or sizeof(char*) not strlen    BUT  
     memcpy(*esp, args->argv[i], strlen(args->argv[i] + 1)); //possibly change strlen() to sizeof(char*) or sizeof(char)
-    arg_pointers[i] = *esp; /////double check (uint32_t) *esp????????? 
+    arg_pointers[i] = *esp; /////double check (uint32_t) *esp?????????
+
+    used_bytes += strlen(args->argv[i] + 1);
   }
 
   //NULL pointer for C standard
@@ -521,6 +525,7 @@ setup_stack (void **esp, struct arguments * args)
   {
     *esp -= i; //!!!might need to add zeros when we dont need it
     memcpy(*esp, &args->argv[args->argc], i); 
+    used_bytes += i;
   }
 
   //push args_pointers onto stack from right to left 
@@ -528,6 +533,7 @@ setup_stack (void **esp, struct arguments * args)
   {
     *esp -= sizeof(char*); 
     memcpy(*esp, &arg_pointers[i], sizeof(char*)); //!!!!! maybe take away &
+    used_bytes += sizeof(char*);
   }
 
   //pushing argv, then argc, then a fake "return address"
@@ -537,14 +543,17 @@ setup_stack (void **esp, struct arguments * args)
   token = *esp;
   *esp -= sizeof(char**);
   memcpy(*esp, &token, sizeof(char**));
+  used_bytes += sizeof(char**);
 
   //pushing argc
   *esp -= sizeof(int);
   memcpy(*esp, &args->argc, sizeof(int)); //&args->argc?????????????
+  used_bytes += sizeof(int);
 
   //pushing fake return address
   *esp -= sizeof(void*);
   memcpy(*esp, &args->argv[args->argc], sizeof(void*)); 
+  used_bytes += sizeof(void*);
 
   free(arg_pointers);
 
