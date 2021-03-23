@@ -95,8 +95,10 @@ struct thread
 
     ///PROJECT 2///
     struct list children;         /* List with the children of this process. */
+    struct list_elem child_elem;  /* Corresponds to our children elements of the list we created */
     struct list open_files;       /* List with all files opened by this process. */
     struct thread* parent;        /* Keep track of this thread/process's parent thread */
+    struct semaphore waited;      /* Semaphore keeps track 
 
     //-PROJECT 2-//
 
