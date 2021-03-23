@@ -99,7 +99,10 @@ syscall_handler (struct intr_frame * f)
   	case SYS_EXEC:
   	{
    		printf ("DEBUG, System call! SYS_EXEC \n");					///DEBUG///
-  		thread_exit ();												///DEBUG///
+  		char * cmd_line = f->esp + 1;					/* Get command line args. */
+
+  		f->eax = sys_exec(cmd_line);
+
   		break;
   	}
 
@@ -192,6 +195,8 @@ syscall_handler (struct intr_frame * f)
   		|| !valid_user_pointer((uint32_t *)size))				
   			sys_exit(-1);
 
+  		void * buffer = pagedir_get_page((uint32_t *)buffer);	/* Get buffer. */
+
   		sys_write(*fd, buffer, *size);			/* Call function. */
   		break;
   	}
@@ -260,11 +265,16 @@ sys_exit (int status)
 	printf("%s: exit(%d)\n", t->name, status);
 }
 
-// pid_t
-// sys_exec (const char *cmd_line)
-// {
+/* Executes a new process from the given command line args. */
+pid_t
+sys_exec (const char *cmd_line)
+{
+	pid_t pid = -1;
 
-// }
+	//function goes here
+
+	return pid;
+}
 
 // int
 // sys_wait (pid_t pid)
