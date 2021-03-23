@@ -67,9 +67,6 @@ process_execute (const char *file_name)
     args->argc += 1;                                /* Increment counter. */
   }
 
-  //add the null pointer because it is C standard
-  //args->argv[argc] = 0; //ADDED CODE   !!!!!!!!!!!!!!!!Might not be able to put here but we shall see, it might have to go in setup_stack
-
   /* Create a new thread to execute FILE_NAME, passing arguments as ARGS. */
   tid = thread_create (args->argv[0], PRI_DEFAULT, start_process, args);
   if (tid == TID_ERROR)
@@ -487,7 +484,6 @@ setup_stack (void **esp, struct arguments * args)
     return NULL;
   }
 
-
   uint8_t *kpage;
   bool success = false;
 
@@ -496,58 +492,61 @@ setup_stack (void **esp, struct arguments * args)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE;  
+        *esp = PHYS_BASE - 24;  
       else
         palloc_free_page (kpage);
     }
 
-  //ADDED CODE
-  char * token;
-  int i;
+  ///PROJECT 2///
 
-  //Placing the words at the top of the stack (in right to left order but it doesnt matter at this point since we'll reference the data from pointer later)
-  for(i = args->argc - 1; i >= 0; i--)
-  {
-    *esp -= strlen(args->argv[i] + 1); //sizeof(char)???? or sizeof(char*) not strlen    BUT  
-    memcpy(*esp, args->argv[i], strlen(args->argv[i] + 1)); //possibly change strlen() to sizeof(char*) or sizeof(char)
-    arg_pointers[i] = *esp; /////double check (uint32_t) *esp????????? 
-  }
+  // char * token;
+  // int i;
+
+  // //Placing the words at the top of the stack (in right to left order but it doesnt matter at this point since we'll reference the data from pointer later)
+  // for(i = args->argc - 1; i >= 0; i--)
+  // {
+  //   *esp -= strlen(args->argv[i] + 1); //sizeof(char)???? or sizeof(char*) not strlen    BUT  
+  //   memcpy(*esp, args->argv[i], strlen(args->argv[i] + 1)); //possibly change strlen() to sizeof(char*) or sizeof(char)
+  //   arg_pointers[i] = *esp; /////double check (uint32_t) *esp????????? 
+  // }
   
-  //NULL pointer for C standard
-  args->argv[args->argc] = 0; //maybe put after alignment
+  // //NULL pointer for C standard
+  // args->argv[args->argc] = 0; //maybe put after alignment
 
-  //Word-aligned acess is much faster than unaligned, so for best performance we want to round the stack pointer down to a multiple of 4
-  i = (size_t) *esp % 4;
-  if(i)
-  {
-    *esp -= i; //!!!might need to add zeros when we dont need it
-    memcpy(*esp, &args->argv[args->argc], i); 
-  }
+  // //Word-aligned acess is much faster than unaligned, so for best performance we want to round the stack pointer down to a multiple of 4
+  // i = (size_t) *esp % 4;
+  // if(i)
+  // {
+  //   *esp -= i; //!!!might need to add zeros when we dont need it
+  //   memcpy(*esp, &args->argv[args->argc], i); 
+  // }
 
-  //push args_pointers onto stack from right to left 
-  for(i = args->argc; i >= 0; i--)
-  {
-    *esp -= sizeof(char*); 
-    memcpy(*esp, &arg_pointers[i], sizeof(char*)); //!!!!! maybe take away &
-  }
+  // //push args_pointers onto stack from right to left 
+  // for(i = args->argc; i >= 0; i--)
+  // {
+  //   *esp -= sizeof(char*); 
+  //   memcpy(*esp, &arg_pointers[i], sizeof(char*)); //!!!!! maybe take away &
+  // }
 
-  //pushing argv, then argc, then a fake "return address"
-  //!!!!!!!!!! ALWAYS double check sizeof
+  // //pushing argv, then argc, then a fake "return address"
+  // //!!!!!!!!!! ALWAYS double check sizeof
 
-  //pushing argv
-  token = *esp;
-  *esp -= sizeof(char**);
-  memcpy(*esp, &token, sizeof(char**));
+  // //pushing argv
+  // token = *esp;
+  // *esp -= sizeof(char**);
+  // memcpy(*esp, &token, sizeof(char**));
 
-  //pushing argc
-  *esp -= sizeof(int);
-  memcpy(*esp, &args->argc, sizeof(int)); //&args->argc?????????????
+  // //pushing argc
+  // *esp -= sizeof(int);
+  // memcpy(*esp, &args->argc, sizeof(int)); //&args->argc?????????????
 
-  //pushing fake return address
-  *esp -= sizeof(void*);
-  memcpy(*esp, &args->argv[args->argc], sizeof(void*)); 
+  // //pushing fake return address
+  // *esp -= sizeof(void*);
+  // memcpy(*esp, &args->argv[args->argc], sizeof(void*)); 
 
-  free(arg_pointers);
+  // free(arg_pointers);
+
+   //-PROJECT 2-//
 
   return success;
 }

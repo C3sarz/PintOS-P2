@@ -38,7 +38,7 @@ valid_user_pointer(const uint32_t * address)
     return false;
 
   /* Error if outside of user space. */
-  if(is_kernel_vaddr(address) || !is_user_vaddr(address)) 
+  if(PHYS_BASE <= (uint32_t)address || !is_user_vaddr(address)) 
     return false;
 
   /* Get page table for process and error check. */
