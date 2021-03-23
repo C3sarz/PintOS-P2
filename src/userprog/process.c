@@ -67,6 +67,8 @@ process_execute (const char *file_name)
     args->argc += 1;                                /* Increment counter. */
   }
 
+
+
   /* Create a new thread to execute FILE_NAME, passing arguments as ARGS. */
   tid = thread_create (args->argv[0], PRI_DEFAULT, start_process, args);
   if (tid == TID_ERROR)
@@ -492,59 +494,65 @@ setup_stack (void **esp, struct arguments * args)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE - 24;  
+        *esp = PHYS_BASE;  
       else
         palloc_free_page (kpage);
     }
 
   ///PROJECT 2///
 
-  // char * token;
-  // int i;
+  int i;
+  args->argv[args->argc] = NULL;  /* Set up NULL pointer. */
+  int alignment;
+  int used_bytes = 0;             /* Used to objdump stack. */
 
-  // //Placing the words at the top of the stack (in right to left order but it doesnt matter at this point since we'll reference the data from pointer later)
-  // for(i = args->argc - 1; i >= 0; i--)
-  // {
-  //   *esp -= strlen(args->argv[i] + 1); //sizeof(char)???? or sizeof(char*) not strlen    BUT  
-  //   memcpy(*esp, args->argv[i], strlen(args->argv[i] + 1)); //possibly change strlen() to sizeof(char*) or sizeof(char)
-  //   arg_pointers[i] = *esp; /////double check (uint32_t) *esp????????? 
-  // }
-  
-  // //NULL pointer for C standard
-  // args->argv[args->argc] = 0; //maybe put after alignment
 
-  // //Word-aligned acess is much faster than unaligned, so for best performance we want to round the stack pointer down to a multiple of 4
-  // i = (size_t) *esp % 4;
-  // if(i)
-  // {
-  //   *esp -= i; //!!!might need to add zeros when we dont need it
-  //   memcpy(*esp, &args->argv[args->argc], i); 
-  // }
+  /* Push arguments to top of stack. */
+  for(i = args->argc-1; i >= 0; i--)
+  {
+    *esp -= strlen(args->argv[i])+1;     /* Leave space for string terminator. */
+    memcpy(*esp, args->argv[i], strlen(args->argv[i])+1); 
+    used_bytes += strlen(args->argv[i])+1; 
+  }
 
-  // //push args_pointers onto stack from right to left 
-  // for(i = args->argc; i >= 0; i--)
-  // {
-  //   *esp -= sizeof(char*); 
-  //   memcpy(*esp, &arg_pointers[i], sizeof(char*)); //!!!!! maybe take away &
-  // }
+  /* Word alignment and NULL pointer setup. */
+  alignment = (unsigned char) *esp % 4;
+  if(alignment > 0)
+  {
+    *esp -= alignment;
+    memcpy(*esp, &args->argv[args->argc], alignment); /* Fill word alignment. */
+    used_bytes += alignment; 
+  }
 
-  // //pushing argv, then argc, then a fake "return address"
-  // //!!!!!!!!!! ALWAYS double check sizeof
+  /* Push addresses to arguments. */
+  for(i = args->argc; i >= 0; i--)
+  {
+    *esp -= sizeof(char*);
+    memcpy(*esp, &args->argv[i], sizeof(char*));
+    used_bytes += sizeof(char*);
+  }
 
-  // //pushing argv
-  // token = *esp;
-  // *esp -= sizeof(char**);
-  // memcpy(*esp, &token, sizeof(char**));
+  /* Push argv. */
+  *esp -= sizeof(char**);
+  memcpy(*esp, &args->argv, sizeof(char**));
+  used_bytes += sizeof(char**);
 
-  // //pushing argc
-  // *esp -= sizeof(int);
-  // memcpy(*esp, &args->argc, sizeof(int)); //&args->argc?????????????
+  /* Push argc. */
+  *esp -= sizeof(int);
+  memcpy(*esp, &args->argc, sizeof(int));
+  used_bytes += sizeof(int);
 
-  // //pushing fake return address
-  // *esp -= sizeof(void*);
-  // memcpy(*esp, &args->argv[args->argc], sizeof(void*)); 
+  /* Push fake return address. */
+  *esp -= sizeof(void*);
+  memcpy(*esp, &args->argv[args->argc], sizeof(void*)); 
+  used_bytes += sizeof(void*);
 
-  // free(arg_pointers);
+  /* Free space used to store the arguments. */
+  palloc_free_page(args->argv);
+  palloc_free_page(args);
+
+  hex_dump(0, *esp, used_bytes, 1);                       //DEBUG
+  hex_dump((int)*esp+used_bytes, *esp, used_bytes, 1);    //DEBUG
 
    //-PROJECT 2-//
 

@@ -38,7 +38,7 @@ valid_user_pointer(const uint32_t * address)
     return false;
 
   /* Error if outside of user space. */
-  if(PHYS_BASE <= (uint32_t)address || !is_user_vaddr(address)) 
+  if(is_kernel_vaddr(address) || !is_user_vaddr(address)) 
     return false;
 
   /* Get page table for process and error check. */
@@ -195,7 +195,7 @@ syscall_handler (struct intr_frame * f)
   		|| !valid_user_pointer((uint32_t *)size))				
   			sys_exit(-1);
 
-  		void * buffer = pagedir_get_page((uint32_t *)buffer);	/* Get buffer. */
+  		//void * buffer = pagedir_get_page((uint32_t *)buffer);	/* Get buffer. */
 
   		sys_write(*fd, buffer, *size);			/* Call function. */
   		break;
