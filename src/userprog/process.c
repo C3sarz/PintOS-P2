@@ -130,7 +130,36 @@ start_process (void * passed_args)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  return -1;
+  //We create a thread for the child we're going to wait on.
+  struct thread *child = NULL;
+  //Using this to iterate through the child thread list stored in the thread struct
+  struct list_elem *iterator;
+
+  //Sanity check for if current thread has no children.
+  if(list_empty(&thread_current()->children))
+  {
+    return -1;
+  }
+
+  //Go through the list of children to see if our child is there.
+  for(iterator = list_front(&thread_current()->children); iterator != list_end(&thread_current()->children); iterator = list_next(iterator))
+  {
+    struct thread *t = list_entry(iterator, struct thread, child_elem);
+    //If we've found our child
+    if(t->tid == child_tid)
+    {
+      //child is t thread we iterated over previously.
+      child = t;
+      break;
+    }
+  }
+  //If we aren't in our child, get out.
+  if(!child)
+  {
+    return -1;
+  }
+  // WILL CONTINUE HERE
+
 }
 
 /* Free the current process's resources. */
@@ -631,3 +660,12 @@ install_page (void *upage, void *kpage, bool writable)
   return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
 }
+
+/*child_finder(tid_t child_to_find)
+{
+  struct list_elem iterator;
+  iterator = list_front(thread_current()->children)
+  for(iterator )
+
+}
+*/

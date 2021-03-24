@@ -101,6 +101,9 @@ syscall_handler (struct intr_frame * f)
    		printf ("DEBUG, System call! SYS_EXEC \n");					///DEBUG///
   		char * cmd_line = f->esp + 1;					/* Get command line args. */
 
+  		if(!valid_user_pointer((uint32_t *)cmd_line))	/* Check pointer validity. */	
+  			sys_exit(-1);
+
   		f->eax = sys_exec(cmd_line);
 
   		break;
@@ -276,15 +279,23 @@ sys_exec (const char *cmd_line)
 	if(pid == -1)	/* ERROR case. */
 		return -1;
 
-	struct thread * new_child; //get pointer
+	/* Iterate through list to find matching PID. */
+	struct thread * t = thread_current();
+	struct list_elem * e;
+	struct thread * new_child;
+
+	for (e = list_begin (&t->children); e != list_end (&t->children);
+        e = list_next (e))
+    {
+        struct thread * curr_child = list_entry (e, struct thread, child_elem);
+        if(curr_child->pid == pid)
+        {
+          	new_child = curr_child;		/* Found PID. */
+        }
+    }
 
 	sema_down(&new_child->sema_loading);	/* Wait for process to load, go on if loaded. */
 
-	//check for problems
-
-
-
-	//function goes here
 	return pid;
 }
 

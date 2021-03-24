@@ -98,12 +98,16 @@ struct thread
     struct list_elem elem;              /* List element. */
 
     ///PROJECT 2///
+
     pid_t pid;
     struct list children;           /* List with the children of this process. */
     struct list open_files;         /* List with all files opened by this process. */
     pid_t parent;                   /* Keep track of this thread/process's parent thread */
     struct semaphore sema_loading;  /* Semaphore for exec synchronization. */
     struct list_elem child_elem;    /* Children list element. */
+
+    struct thread * parent;        /* Keep track of this thread/process's parent thread */
+    struct semaphore waited;      
 
     //-PROJECT 2-//
 
