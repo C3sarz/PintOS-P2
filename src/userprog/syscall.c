@@ -282,7 +282,7 @@ sys_exec (const char *cmd_line)
 	/* Iterate through list to find matching PID. */
 	struct thread * t = thread_current();
 	struct list_elem * e;
-	struct thread * new_child;
+	struct thread * new_child = NULL;
 
 	for (e = list_begin (&t->children); e != list_end (&t->children);
         e = list_next (e))
@@ -293,6 +293,8 @@ sys_exec (const char *cmd_line)
           	new_child = curr_child;		/* Found PID. */
         }
     }
+    if(new_child == NULL)
+    	return -1;
 
 	sema_down(&new_child->sema_loading);	/* Wait for process to load, go on if loaded. */
 

@@ -105,8 +105,6 @@ struct thread
     pid_t parent;                   /* Keep track of this thread/process's parent thread */
     struct semaphore sema_loading;  /* Semaphore for exec synchronization. */
     struct list_elem child_elem;    /* Children list element. */
-
-    struct thread * parent;        /* Keep track of this thread/process's parent thread */
     struct semaphore waited;      
 
     //-PROJECT 2-//
