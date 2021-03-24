@@ -266,6 +266,8 @@ sys_exit (int status)
 	//all code regarding children goes here
 
 	printf("%s: exit(%d)\n", t->name, status);
+  	printf("exit still WIP!!!!!!!!!!!!\n");
+  	thread_exit();
 }
 
 /* Executes a new process from the given command line args. */

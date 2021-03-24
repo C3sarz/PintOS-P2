@@ -35,7 +35,8 @@ Illegal memory accesses:
 	-sys_open
 	-sys_close
 	-sys_filesize
-	-sys_exit (SEMA_LOAD CHECK)
+	-sys_exit (incomplete)
+	-sys_exec (SEMA_LOAD CHECK)
 	-sys_tell completed
 
 *-syscall.h:	
@@ -46,7 +47,7 @@ Illegal memory accesses:
 	-added code required for sys_exec (semaphores and loading)
 
 *-thread.h
-	-added children list property
+	-added children list property	(NOT WORKING!!!!!!!!!!!!!!!)
 	-added open_files list property
 	-added parent thread property
 	-added fd_list list property to represent file descriptors of thread
