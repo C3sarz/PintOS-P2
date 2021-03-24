@@ -130,34 +130,43 @@ start_process (void * passed_args)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  //We create a thread for the child we're going to wait on.
-  struct thread *child = NULL;
-  //Using this to iterate through the child thread list stored in the thread struct
-  struct list_elem *iterator;
 
-  //Sanity check for if current thread has no children.
-  if(list_empty(&thread_current()->children))
-  {
-    return -1;
-  }
+  while(1); //REMOVE WHEN IMPLEMENTED WAIT!!!!
 
-  //Go through the list of children to see if our child is there.
-  for(iterator = list_front(&thread_current()->children); iterator != list_end(&thread_current()->children); iterator = list_next(iterator))
-  {
-    struct thread *t = list_entry(iterator, struct thread, child_elem);
-    //If we've found our child
-    if(t->tid == child_tid)
-    {
-      //child is t thread we iterated over previously.
-      child = t;
-      break;
-    }
-  }
-  //If we aren't in our child, get out.
-  if(!child)
-  {
-    return -1;
-  }
+  //-----------------------------------------------------------------------------------------------------------
+  // Note: commented out this code as I was testing the stack, and this killed the kernel as it is incomplete.
+  //-----------------------------------------------------------------------------------------------------------
+  
+
+
+  // //We create a thread for the child we're going to wait on.
+  // struct thread *child = NULL;
+  // //Using this to iterate through the child thread list stored in the thread struct
+  // struct list_elem *iterator;
+
+  // //Sanity check for if current thread has no children.
+  // if(list_empty(&thread_current()->children))
+  // {
+  //   return -1;
+  // }
+
+  // //Go through the list of children to see if our child is there.
+  // for(iterator = list_front(&thread_current()->children); iterator != list_end(&thread_current()->children); iterator = list_next(iterator))
+  // {
+  //   struct thread *t = list_entry(iterator, struct thread, child_elem);
+  //   //If we've found our child
+  //   if(t->tid == child_tid)
+  //   {
+  //     //child is t thread we iterated over previously.
+  //     child = t;
+  //     break;
+  //   }
+  // }
+  // //If we aren't in our child, get out.
+  // if(!child)
+  // {
+  //   return -1;
+  // }
   // WILL CONTINUE HERE
 
 }
