@@ -593,11 +593,17 @@ setup_stack (void **esp, struct arguments * args)
   int alignment;
   int used_bytes = 0;             /* Used to objdump stack. */
 
+
+  /* Set up argv. */
+  int argc = args->argc;
+  char * argv = calloc(argc,sizeof(int));
+
   /* Push arguments to top of stack. */
   for(i = args->argc-1; i >= 0; i--)
   {
     *esp -= strlen(args->argv[i])+1;     /* Leave space for string terminator. */
     memcpy(*esp, args->argv[i], strlen(args->argv[i])+1); 
+    argv[i] = (uint32_t) *esp;
     used_bytes += strlen(args->argv[i])+1; 
   }
 
@@ -613,25 +619,28 @@ setup_stack (void **esp, struct arguments * args)
   /* Push addresses to arguments. */
   for(i = args->argc; i >= 0; i--)
   {
-    *esp -= sizeof(char*);
-    memcpy(*esp, &args->argv[i], sizeof(char*));
-    used_bytes += sizeof(char*);
+    *esp -= sizeof(int);
+    memcpy(*esp, &argv[i], sizeof(int));
+    used_bytes += sizeof(int);
   }
 
-  /* Push argv. */
-  *esp -= sizeof(char**);
-  memcpy(*esp, &args->argv, sizeof(char**));
-  used_bytes += sizeof(char**);
+  /* Push argv address. */
+  int saved_esp = (uint32_t) *esp;
+  *esp -= sizeof(int);
+  memcpy(*esp, &saved_esp, sizeof(int));
+  used_bytes += sizeof(int);
 
   /* Push argc. */
   *esp -= sizeof(int);
-  memcpy(*esp, &args->argc, sizeof(int));
+  memcpy(*esp, &argc, sizeof(int));
   used_bytes += sizeof(int);
 
   /* Push fake return address. */
   *esp -= sizeof(void*);
   memcpy(*esp, &args->argv[args->argc], sizeof(void*)); 
   used_bytes += sizeof(void*);
+
+  free(argv);
 
   hex_dump(0, *esp, used_bytes, 1);                       //DEBUG
   hex_dump((int)*esp+used_bytes, *esp, used_bytes, 1);    //DEBUG
