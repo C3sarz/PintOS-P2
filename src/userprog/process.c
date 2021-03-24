@@ -26,14 +26,14 @@ static bool load (struct arguments * args, void (**eip) (void), void **esp);
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
    thread id, or TID_ERROR if the thread cannot be created. */
-tid_t
-process_execute (const char *file_name) 
+pid_t
+process_execute (const char *cmd_line) 
 {
 
   /// PROJECT 2 ///
 
   char *fn_copy;
-  tid_t tid;
+  pid_t pid;
   struct arguments * args;
 
   /* Make a copy of FILE_NAME.
@@ -41,7 +41,7 @@ process_execute (const char *file_name)
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
-  strlcpy (fn_copy, file_name, PGSIZE);
+  strlcpy (fn_copy, cmd_line, PGSIZE);
 
   /* Allocate memory for arguments structure, might be a bit wasteful. */
   args = palloc_get_page (0);                          /* Allocate a page for args struct and error checking. */
@@ -67,18 +67,16 @@ process_execute (const char *file_name)
     args->argc += 1;                                /* Increment counter. */
   }
 
-
-
   /* Create a new thread to execute FILE_NAME, passing arguments as ARGS. */
-  tid = thread_create (args->argv[0], PRI_DEFAULT, start_process, args);
-  if (tid == TID_ERROR)
+  pid = (pid_t)thread_create (args->argv[0], PRI_DEFAULT, start_process, args);
+  if (pid == PID_ERROR)
   {
     palloc_free_page (fn_copy);
     palloc_free_page(args->argv);
     palloc_free_page(args);
   }
 
-  return tid;
+  return pid;
 
   //- PROJECT 2 -//
 
@@ -100,11 +98,15 @@ start_process (void * passed_args)
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (args, &if_.eip, &if_.esp);
 
-  /* If load failed, quit. */
+  /* Free args. */
   palloc_free_page (args->argv);
   palloc_free_page (args);
+
+  /* If load failed, quit. */
   if (!success) 
     thread_exit ();
+
+  sema_up(&thread_current()->sema_loading); /* Process loaded. */
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -335,13 +337,11 @@ load (struct arguments * args, void (**eip) (void), void **esp)
               if (!load_segment (file, file_page, (void *) mem_page,
                                  read_bytes, zero_bytes, writable))
               {
-                printf("Failed at load segment, i = %d\n",i);////////////////////
                 goto done;
               }
             }
           else
           {
-            printf("Failed at validate_segment, i = %d\n",i);////////////////////
             goto done;
           }
           break;
@@ -351,7 +351,6 @@ load (struct arguments * args, void (**eip) (void), void **esp)
   /* Set up stack. */
   if (!setup_stack (esp, args))
   {
-    printf("Failed at stack setup, i = %d\n",i);////////////////////
     goto done;
   }
 
@@ -604,10 +603,6 @@ setup_stack (void **esp, struct arguments * args)
   *esp -= sizeof(void*);
   memcpy(*esp, &args->argv[args->argc], sizeof(void*)); 
   used_bytes += sizeof(void*);
-
-  /* Free space used to store the arguments. */
-  palloc_free_page(args->argv);
-  palloc_free_page(args);
 
   hex_dump(0, *esp, used_bytes, 1);                       //DEBUG
   hex_dump((int)*esp+used_bytes, *esp, used_bytes, 1);    //DEBUG

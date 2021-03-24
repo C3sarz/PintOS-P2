@@ -4,6 +4,9 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include "userprog/process.h"
+#include "threads/synch.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -17,6 +20,7 @@ enum thread_status
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
 typedef int tid_t;
+typedef int pid_t;
 #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
 
 /* Thread priorities. */
@@ -94,9 +98,12 @@ struct thread
     struct list_elem elem;              /* List element. */
 
     ///PROJECT 2///
-    struct list children;         /* List with the children of this process. */
-    struct list open_files;       /* List with all files opened by this process. */
-    struct thread* parent;        /* Keep track of this thread/process's parent thread */
+    pid_t pid;
+    struct list children;           /* List with the children of this process. */
+    struct list open_files;         /* List with all files opened by this process. */
+    pid_t parent;                   /* Keep track of this thread/process's parent thread */
+    struct semaphore sema_loading;  /* Semaphore for exec synchronization. */
+    struct list_elem child_elem;    /* Children list element. */
 
     //-PROJECT 2-//
 

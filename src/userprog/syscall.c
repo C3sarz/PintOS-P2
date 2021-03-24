@@ -269,10 +269,22 @@ sys_exit (int status)
 pid_t
 sys_exec (const char *cmd_line)
 {
-	pid_t pid = -1;
+	lock_acquire(&file_lock);
+	pid_t pid = process_execute(cmd_line);	/* Run process and get PID. */
+	lock_release(&file_lock);	
+
+	if(pid == -1)	/* ERROR case. */
+		return -1;
+
+	struct thread * new_child; //get pointer
+
+	sema_down(&new_child->sema_loading);	/* Wait for process to load, go on if loaded. */
+
+	//check for problems
+
+
 
 	//function goes here
-
 	return pid;
 }
 

@@ -24,6 +24,7 @@ Illegal memory accesses:
 	
 	-Added arguments struct
 	-function prototypes
+	-SEMA_LOAD increases if process loads correctly
 
 *-syscall.c:
 	-validate pointer function
@@ -34,7 +35,7 @@ Illegal memory accesses:
 	-sys_open
 	-sys_close
 	-sys_filesize
-	-sys_exit partially (no children functionality)
+	-sys_exit (SEMA_LOAD CHECK)
 	-sys_tell completed
 
 *-syscall.h:	
@@ -42,6 +43,7 @@ Illegal memory accesses:
 
 *-thread.c
 	-initialized new properties
+	-added code required for sys_exec (semaphores and loading)
 
 *-thread.h
 	-added children list property

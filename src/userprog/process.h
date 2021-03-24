@@ -12,15 +12,15 @@ struct arguments
 	char ** argv;		/* Array of argument strings. */
 };
 
-/* Thread identifier type.
-   You can redefine this to whatever type you like. */
+/* Process identifier type. */
 typedef int pid_t;
-#define PID_ERROR ((pid_t) -1)          /* Error value for tid_t. */
+typedef int tid_t;
+#define PID_ERROR ((pid_t) -1)          /* Error value for pid_t. */
 
 //-PROJECT 2-//
 
-tid_t process_execute (const char *file_name);
-int process_wait (tid_t);
+tid_t process_execute (const char *cmd_line);
+int process_wait (tid_t child_tid);
 void process_exit (void);
 void process_activate (void);
 

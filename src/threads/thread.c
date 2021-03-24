@@ -200,8 +200,14 @@ thread_create (const char *name, int priority,
 
     ///PROJECT 2///
 
-  list_init(&t->children);       /* Direct children of this process. */
-  list_init(&t->open_files);     /* Files opened by this process. */
+  t->pid = (pid_t) tid;
+  list_init(&t->children);         /* Direct children of this process. */
+  list_init(&t->open_files);       /* Files opened by this process. */
+  sema_init(&t->sema_loading, 0);  /* Semaphore used to track loading. */
+
+  /* Add new process to children list of parent process. */
+  list_push_back(&thread_current()->children, &t->child_elem);
+  t->parent = thread_current()->pid;
 
   //-PROJECT 2-//
 
