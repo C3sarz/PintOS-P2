@@ -35,7 +35,7 @@ Illegal memory accesses:
 	-sys_open
 	-sys_close
 	-sys_filesize
-	-sys_exit (incomplete)
+	-sys_exit (incomplete) 
 	-sys_exec (SEMA_LOAD CHECK)
 	-sys_tell completed
 

@@ -167,7 +167,7 @@ process_wait (tid_t child_tid UNUSED)
 
   //then return the child's exit code after freeing it from ... memory????
   int process_code = child->exit_code;
-  list_remove(child_elem);
+  list_remove(&child_elem);
   //free(child); may need may not
   return process_code;
 
