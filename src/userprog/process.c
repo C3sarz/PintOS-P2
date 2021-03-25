@@ -138,7 +138,7 @@ process_wait (tid_t child_tid UNUSED)
 
   //while(1); //REMOVE WHEN IMPLEMENTED WAIT!!!!
 
-  Sanity check for if current thread has no children.
+  //Sanity check for if current thread has no children.
   if(list_empty(&thread_current()->children))
   {
     return -1;
@@ -167,7 +167,7 @@ process_wait (tid_t child_tid UNUSED)
 
   //then return the child's exit code after freeing it from ... memory????
   int process_code = child->exit_code;
-  list_remove(&child_elem);
+  list_remove(&child->child_elem);
   //free(child); may need may not
   return process_code;
 
@@ -597,7 +597,7 @@ setup_stack (void **esp, struct arguments * args)
 
   free(argv);
 
-  printf("Alignment bytes: %d, Final esp: %x\n", alignment, *esp);
+  printf("Alignment bytes: %d, Final esp: %x\n", alignment, (uint32_t)*esp);
   hex_dump((int)*esp, *esp, used_bytes, 1);    //DEBUG
 
    //-PROJECT 2-//

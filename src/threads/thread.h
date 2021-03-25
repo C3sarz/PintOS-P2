@@ -105,7 +105,6 @@ struct thread
     pid_t parent;                   /* Keep track of this thread/process's parent thread */
     struct semaphore sema_loading;  /* Semaphore for exec synchronization. */
     struct list_elem child_elem;    /* Children list element. */
-    struct semaphore waited;       
     int parent_waiting;             /* Set on child if it has made its parent wait before*/
     int exit_code;                  /* The exit code of this process*/
 
