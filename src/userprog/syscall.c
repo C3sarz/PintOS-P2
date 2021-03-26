@@ -114,7 +114,8 @@ syscall_handler (struct intr_frame * f)
   	{
   		printf ("DEBUG, System call! SYS_WAIT \n");					///DEBUG///
 		pid_t pid = get_word((int *)f->esp + 1);		/* Get PID */
-  		thread_exit();												
+
+  		f->eax = sys_wait(pid);											
   		break;
   	}
 
@@ -252,6 +253,13 @@ sys_exit (int status)
 	struct thread * t = thread_current();
 
 	//all code regarding children goes here
+	//Write up says: If the process's parent is waiting on it, that value should be returned. IDK what that means in terms of implementing so I may be missing it
+	if(t == NULL)
+	{
+		status = -1;
+	}
+
+	t->exit_code = status;
 
 	printf("%s: exit(%d)\n", t->name, status);
   	printf("exit still WIP!!!!!!!!!!!!\n");
@@ -297,13 +305,14 @@ sys_exec (const char *cmd_line)
 	return pid;
 }
 
-// int
-// sys_wait (pid_t pid)
-// {
+/* Makes process wait for another pid. */
+int
+sys_wait (pid_t pid)
+{
+	return process_wait(pid);
+}
 
-// }
-
-/* Creates a new file os size INITIAL_SIZE. */
+/* Creates a new file of size INITIAL_SIZE. */
 bool
 sys_create (const char *filename , unsigned initial_size)
 {
