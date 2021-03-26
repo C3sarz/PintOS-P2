@@ -18,8 +18,8 @@
 #define STDIN 0
 #define STDOUT 1
 
-static bool valid_user_pointer(const uint32_t * address);
-static uint32_t get_word(const uint32_t * address);
+static bool valid_user_pointer(const int * address);
+static int get_word(const int * address);
 static void syscall_handler (struct intr_frame * f);
 
 void
@@ -31,7 +31,7 @@ syscall_init (void)
 
 /* Verifies if the given address is valid and belongs to the process.*/
 static bool
-valid_user_pointer(const uint32_t * address)
+valid_user_pointer(const int * address)
 {
   /* Check null pointer */
   if(address == NULL)
@@ -55,8 +55,8 @@ valid_user_pointer(const uint32_t * address)
 
 /* Retrieves a word from user memory. 
 If the given pointer is invalid or illegal, the process is terminated */
-static uint32_t
-get_word(const uint32_t * address)
+static int
+get_word(const int * address)
 {
   uint32_t word;
   int i;
@@ -65,7 +65,7 @@ get_word(const uint32_t * address)
   {
     unsigned char * byte = (unsigned char *)address + i;  /* Get byte i from word */
 
-    if(!valid_user_pointer((uint32_t *)byte))           /* Check if byte address is valid */
+    if(!valid_user_pointer((int *)byte))           /* Check if byte address is valid */
     {
       sys_exit(-1);                      /* If invalid, get rid of offending process */
       NOT_REACHED();
@@ -85,26 +85,27 @@ syscall_handler (struct intr_frame * f)
   {
   	case SYS_HALT:
   	{
-  		sys_halt();	/* Halt system. */
+  		/* Halt system. */
+  		sys_halt();	
   		break;
   	}
 
   	case SYS_EXIT:
   	{
   		printf ("DEBUG, System call! SYS_EXIT \n");					///DEBUG///
-  		sys_exit(get_word(f->esp+1));	/* Exit status is the first parameter. */
+  		sys_exit(get_word((int *)f->esp + 1));	/* Exit status is the first parameter. */
   		break;
   	}
 
   	case SYS_EXEC:
   	{
    		printf ("DEBUG, System call! SYS_EXEC \n");					///DEBUG///
-  		char * cmd_line = f->esp + 1;					/* Get command line args. */
+  		int * cmd_line = (int *)f->esp + 1; 			/* Get command line args. */
 
-  		if(!valid_user_pointer((uint32_t *)cmd_line))	/* Check pointer validity. */	
+  		if(!valid_user_pointer(cmd_line))	/* Check pointer validity. */	
   			sys_exit(-1);
 
-  		f->eax = sys_exec(cmd_line);
+  		f->eax = sys_exec((char *)*cmd_line);
 
   		break;
   	}
@@ -112,124 +113,118 @@ syscall_handler (struct intr_frame * f)
   	case SYS_WAIT:
   	{
   		printf ("DEBUG, System call! SYS_WAIT \n");					///DEBUG///
-  		thread_exit ();												///DEBUG///
+		pid_t pid = get_word((int *)f->esp + 1);		/* Get PID */
+  		thread_exit();												
   		break;
   	}
 
   	case SYS_CREATE:
   	{
   		printf ("DEBUG, System call! SYS_CREATE \n");					///DEBUG///
-  		char * filename = f->esp + 1;					/* Get file name. */
-  		unsigned * filesize = f->esp + 2;				/* Get size offset. */
+  		int * filename = (int *)f->esp + 1; 				/* Get filename. */
+  		unsigned filesize = get_word((int *)f->esp + 2);	/* Get size offset. */
 
-  		if(!valid_user_pointer((uint32_t *)filename)	/* Check pointer validity. */
-  		|| !valid_user_pointer((uint32_t *)filesize))		
+  		if(!valid_user_pointer(filename))		/* Check pointer validity. */		
   			sys_exit(-1);
 
-  		sys_create(filename, *filesize);				/* Call function. */	
+  		sys_create((char *)*filename, filesize);			/* Call function. */	
   		break;
   	}
 
   	case SYS_REMOVE:
   	{
   		printf ("DEBUG, System call! SYS_REMOVE \n");					///DEBUG///
-  		char * filename = f->esp + 1;					/* Get file name. */
+  		int * filename = (int *)f->esp + 1; 			/* Get filename. */
 
-  		if(!valid_user_pointer((uint32_t *)filename))	/* Check pointer validity. */	
+  		if(!valid_user_pointer(filename))	/* Check pointer validity. */	
   			sys_exit(-1);
 
-  		sys_remove(filename);							/* Call function. */	
+  		sys_remove((char *)*filename);							/* Call function. */	
   		break;
   	}
 
   	case SYS_OPEN:
   	{
   		printf ("DEBUG, System call! SYS_OPEN \n");					///DEBUG///
-		char * filename = f->esp + 1;					/* Get filename. */
-  		if(!valid_user_pointer((uint32_t *)filename))	/* Check pointer validity. */		
+		int * filename = (int *)f->esp + 1; 			/* Get filename. */
+
+  		if(!valid_user_pointer(filename))	/* Check pointer validity. */		
   			sys_exit(-1);
   		
-  		f->eax = sys_open(filename);
+  		f->eax = sys_open((char *)*filename);
   		break;
   	}
 
   	case SYS_FILESIZE:
   	{
-  		printf ("DEBUG, System call! SYS_FILESIZE \n");					///DEBUG///
-  		int * fd = f->esp + 1;					/* Get file descriptor. */
-  		if(!valid_user_pointer((uint32_t *)fd))	/* Check pointer validity. */		
-  			sys_exit(-1);
+  		printf ("DEBUG, System call! SYS_FILESIZE \n");
+  	  	int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
+  		
+  		/* Pointer validation done by get_word... */
 
-  		f->eax = sys_filesize(*fd);				/* Find size. */
+  		f->eax = sys_filesize(fd);							/* Find size. */
   		break;
   	}
 
   	case SYS_READ:
-	  {
+	{
   		printf ("DEBUG, System call! SYS_READ \n");					///DEBUG///
-	    int * fd = f->esp + 1;
-		//Sanity checks on all arguments
-		if(!valid_user_pointer((uint32_t *)fd))
-			sys_exit(-1);
+     	int fd = get_word((int *)f->esp + 1);           /* Get file descriptor. */
+    	int * buffer = (int *)f->esp + 2;               /* Get buffer address. */
+    	unsigned size = get_word((int *)f->esp + 3);    /* Get size. */
 
-		//Buffer SHOULD BE second argument.
-		void * buffer = f->esp + 2;
-		if(!valid_user_pointer((uint32_t *)buffer))
-			sys_exit(-1);
+    	if(!valid_user_pointer(buffer))				    /* Check pointer validity. */
+    		sys_exit(-1);
 
-		//Size is third on the stack(?)
-		unsigned int * bufSize = f->esp + 3;
-		if(!valid_user_pointer((uint32_t *)bufSize))
-			sys_exit(-1);
-
-  	  	f->eax = sys_read(*fd, buffer, *bufSize);	
+  		f->eax = sys_read(fd, (void *)*buffer, size);	
   		break;
-	  }
+	 }
 
- 	case SYS_WRITE:
+    case SYS_WRITE:
     {
-     // printf ("DEBUG, System call! SYS_WRITE \n");          ///DEBUG///
-      int fd = get_word((int *)f->esp + 1);           /* Get file descriptor. */
-      int * buffer = (int *)f->esp + 2;               /* Get buffer address. */
-      unsigned size = get_word((int *)f->esp + 3);    /* Get file descriptor. */
+	    // printf ("DEBUG, System call! SYS_WRITE \n");
+	    int fd = get_word((int *)f->esp + 1);           /* Get file descriptor. */
+	    int * buffer = (int *)f->esp + 2;               /* Get buffer address. */
+	    unsigned size = get_word((int *)f->esp + 3);    /* Get size. */
 
-      f->eax = sys_write(fd, (void *)*buffer, size);     /* Call function. */
-      break;
+	    if(!valid_user_pointer(buffer))				  /* Check pointer validity. */
+	    	sys_exit(-1);
+
+	    f->eax = sys_write(fd, (void *)*buffer, size);    	  /* Call function. */
+	    break;
     }
 
   	case SYS_SEEK:
   	{
-  		printf ("DEBUG, System call! SYS_SEEK \n");					///DEBUG///
-  		int * fd = f->esp + 1;					/* Get file descriptor. */
-  		unsigned * offset = f->esp + 2;			/* Get position offset. */
+  		//printf ("DEBUG, System call! SYS_SEEK \n");
+      	int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
+  		unsigned offset = get_word((int *)f->esp + 2);		/* Get position offset. */
 
-  		if(!valid_user_pointer((uint32_t *)fd)	/* Check pointer validity. */
-  		|| !valid_user_pointer((uint32_t *)offset))		
-  			sys_exit(-1);
+  		/* Pointer validation done by get_word... */
 
-  		sys_seek(*fd, *offset);					/* Call function. */			
+  		sys_seek(fd, offset);								/* Call function. */			
   		break;
   	}
 
     case SYS_TELL:
     {
-  		printf ("DEBUG, System call! SYS_TELL \n");					///DEBUG///
-  	  	int * fd = f->esp + 1;					/* Get file descriptor. */
-  		if(!valid_user_pointer((uint32_t *)fd))	/* Check pointer validity. */		
-  			sys_exit(-1);
+  		//printf ("DEBUG, System call! SYS_TELL \n");
+  	  	int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
+  		
+  		/* Pointer validation done by get_word... */
 
-    	f->eax = sys_tell(*fd);					/* Call function. */
+    	f->eax = sys_tell(fd);								/* Call function. */
   		break;
   	}
 
     case SYS_CLOSE:
   	{
-  		printf ("DEBUG, System call! SYS_CLOSE \n");					///DEBUG///
-  		int * fd = f->esp + 1;					/* Get file descriptor. */
-  		if(!valid_user_pointer((uint32_t *)fd))	/* Check pointer validity. */		
-  			sys_exit(-1);
+  		//printf ("DEBUG, System call! SYS_CLOSE \n");
+  	  	int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
+  		
+  		/* Pointer validation done by get_word... */
 
-  		sys_close(*fd);							/* Close file. */
+  		sys_close(fd);							/* Close file. */
   		break;
   	}
 
@@ -237,7 +232,7 @@ syscall_handler (struct intr_frame * f)
   	default:
   	{
   		printf("Invalid system call: %d\n", esp_word);
-  		thread_exit();
+  		sys_exit(-1);
   		break;		
   	}
   }
