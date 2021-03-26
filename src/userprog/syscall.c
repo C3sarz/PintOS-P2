@@ -112,7 +112,7 @@ syscall_handler (struct intr_frame * f)
   	case SYS_WAIT:
   	{
   		printf ("DEBUG, System call! SYS_WAIT \n");					///DEBUG///
-  		f->eax = sys_wait(get_word(f->esp+1)); //may need to cast to pid_t
+  		thread_exit ();												///DEBUG///
   		break;
   	}
 
@@ -186,23 +186,16 @@ syscall_handler (struct intr_frame * f)
   		break;
 	  }
 
-  	case SYS_WRITE:
-  	{
-  		printf ("DEBUG, System call! SYS_WRITE \n");					///DEBUG///
-  	  	int * fd = f->esp + 1;					/* Get file descriptor. */
-  		void * buffer = f->esp + 2;				/* Get buffer address. */
-  		unsigned * size = f->esp + 3;			/* Get file descriptor. */
+ 	case SYS_WRITE:
+    {
+     // printf ("DEBUG, System call! SYS_WRITE \n");          ///DEBUG///
+      int fd = get_word((int *)f->esp + 1);           /* Get file descriptor. */
+      int * buffer = (int *)f->esp + 2;               /* Get buffer address. */
+      unsigned size = get_word((int *)f->esp + 3);    /* Get file descriptor. */
 
-  		if(!valid_user_pointer((uint32_t *)fd)	/* Check pointer validity. */
-  		|| !valid_user_pointer((uint32_t *)buffer)
-  		|| !valid_user_pointer((uint32_t *)size))				
-  			sys_exit(-1);
-
-  		//void * buffer = pagedir_get_page((uint32_t *)buffer);	/* Get buffer. */
-
-  		sys_write(*fd, buffer, *size);			/* Call function. */
-  		break;
-  	}
+      f->eax = sys_write(fd, (void *)*buffer, size);     /* Call function. */
+      break;
+    }
 
   	case SYS_SEEK:
   	{
@@ -264,13 +257,6 @@ sys_exit (int status)
 	struct thread * t = thread_current();
 
 	//all code regarding children goes here
-	//Write up says: If the process's parent is waiting on it, that value should be returned. IDK what that means in terms of implementing so I may be missing it
-	if(t == NULL)
-	{
-		status = -1;
-	}
-
-	t->exit_code = status;
 
 	printf("%s: exit(%d)\n", t->name, status);
   	printf("exit still WIP!!!!!!!!!!!!\n");
@@ -316,11 +302,11 @@ sys_exec (const char *cmd_line)
 	return pid;
 }
 
-int
-sys_wait (pid_t pid)
-{
-	return process_wait(pid);
-}
+// int
+// sys_wait (pid_t pid)
+// {
+
+// }
 
 /* Creates a new file os size INITIAL_SIZE. */
 bool
