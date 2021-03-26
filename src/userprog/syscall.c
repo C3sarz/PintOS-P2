@@ -254,12 +254,10 @@ sys_exit (int status)
 
 	//all code regarding children goes here
 	//Write up says: If the process's parent is waiting on it, that value should be returned. IDK what that means in terms of implementing so I may be missing it
-	if(t == NULL)
+	if(t != NULL)
 	{
-		status = -1;
+		t->exit_code = status;
 	}
-
-	t->exit_code = status;
 
 	printf("%s: exit(%d)\n", t->name, status);
   	printf("exit still WIP!!!!!!!!!!!!\n");
