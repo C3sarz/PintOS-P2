@@ -40,7 +40,7 @@ process_execute (const char *cmd_line)
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
-    return TID_ERROR;
+    return PID_ERROR;//TID
   strlcpy (fn_copy, cmd_line, PGSIZE);
 
   /* Allocate memory for arguments structure, might be a bit wasteful. */
@@ -48,7 +48,7 @@ process_execute (const char *cmd_line)
   if (args == NULL)                                    /* Error checking. */
   {
     palloc_free_page(fn_copy);
-    return TID_ERROR;
+    return PID_ERROR;//TID
   }
   args->argc = 0;                                      /* Initialize the arguments counter. */
   args->argv = (char **)palloc_get_page(0);            /* Allocate and initialize argument array. */
@@ -56,7 +56,7 @@ process_execute (const char *cmd_line)
   {
     palloc_free_page(fn_copy);
     palloc_free_page(args);
-    return TID_ERROR;
+    return PID_ERROR;//TID
   }
 
   /* Use the provided string tokenizer to get the arguments */
@@ -69,11 +69,11 @@ process_execute (const char *cmd_line)
 
   /* Create a new thread to execute FILE_NAME, passing arguments as ARGS. */
   pid = (pid_t)thread_create (args->argv[0], PRI_DEFAULT, start_process, args);
-  if (pid == PID_ERROR)
+  if (pid == TID_ERROR)
   {
     palloc_free_page (fn_copy);
     palloc_free_page(args->argv);
-    palloc_free_page(args);
+    palloc_free_page(args);  
   }
 
   return pid;
@@ -128,7 +128,7 @@ start_process (void * passed_args)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid) //got rid of UNUSED 
+process_wait (pid_t child_pid) //got rid of UNUSED 
 {
 
  //We create a thread for the child we're going to wait on.
@@ -145,11 +145,11 @@ process_wait (tid_t child_tid) //got rid of UNUSED
   }
 
   //Go through the list of children to see if our child is there.
-  for(iterator = list_front(&thread_current()->children); iterator != list_end(&thread_current()->children); iterator = list_next(iterator))
+  for(iterator = list_front(&thread_current()->children); iterator != list_end(&thread_current()->children); iterator = list_next(iterator)) 
   {
     struct thread *t = list_entry(iterator, struct thread, child_elem);
     //If we've found our child
-    if(t->tid == child_tid)
+    if(t->pid == child_pid)
     {
       //child is t thread we iterated over previously.
       child = t;
@@ -185,6 +185,18 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+
+  if(cur->exit_code == -1)
+  {
+    sys_exit(-1);
+  }
+
+  int process_code = cur->exit_code;
+  printf("%s: exit(%d)\n", cur->name, process_code);
+
+  lock_acquire(&file_lock);
+  
+
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */

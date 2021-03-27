@@ -56,6 +56,9 @@ Illegal memory accesses:
 *-file.h
 	-added new open_file_elem struct.
 
+*-exception.c
+	-changed line 93 to sys_exit(-1) to be closed as a user program not a kernel
+	-added #include "userprog/syscall.h"
 
 ==== Removed code: ====
 
