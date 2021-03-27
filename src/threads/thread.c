@@ -204,6 +204,7 @@ thread_create (const char *name, int priority,
   list_init(&t->children);         /* Direct children of this process. */
   list_init(&t->open_files);       /* Files opened by this process. */
   sema_init(&t->sema_loading, 0);  /* Semaphore used to track loading. */
+  sema_init(&t->sema_exit, 0);
   t->parent_waiting = 0;           /* Set on child denoting if it is making its parent wait */
   t->exit_code = -1;               /* This process's exit code */
 

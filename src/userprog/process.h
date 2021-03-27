@@ -12,6 +12,19 @@ struct arguments
 	char ** argv;		/* Array of argument strings. */
 };
 
+/* Will use this struct for synchronization of the child process in wait() and possibly exec? */
+
+/* "Ignore for now"
+struct child_process
+{
+	int pid;
+	int load_status;
+	int wait;
+	int exit;
+	int status;
+	struct semaphore;
+}
+*/
 /* Process identifier type. */
 typedef int pid_t;
 typedef int tid_t;

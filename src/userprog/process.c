@@ -164,6 +164,12 @@ process_wait (tid_t child_tid) //got rid of UNUSED
 
   // since we are in the child, we must state that this is its first and only time making its parent wait
   child->parent_waiting = 1;
+  //While exit code is not correct value.
+  while(!child->exit_code)
+  {
+    //Borrowed from other solution for testing.
+    asm volatile("" : : : "memory");
+  }
 
   //then return the child's exit code after freeing it from ... memory????
   int process_code = child->exit_code;
@@ -311,6 +317,14 @@ load (struct arguments * args, void (**eip) (void), void **esp)
       printf ("load: %s: open failed\n", file_name);
       goto done; 
     }
+
+/* ADDED CODE: May add back in later
+    //Deny a write to this executable once it is loaded.
+  file_deny_write(file);
+  //Denote that this thread has this executable file.
+
+  t->executable_file = file;
+*/
 
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
