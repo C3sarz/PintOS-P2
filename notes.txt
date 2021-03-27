@@ -19,6 +19,8 @@ Illegal memory accesses:
 	-implementing passing arguments
 	-modified load() to acomodate args
 	-added argument passing in setup_stack(). Functionality probably won't look but good layout
+	-I changed three return TID_ERROR to PID_ERROR
+	- process_exit()
 
 *-process.h:
 	

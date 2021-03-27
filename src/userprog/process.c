@@ -128,7 +128,7 @@ start_process (void * passed_args)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (pid_t child_pid) //got rid of UNUSED 
+process_wait (tid_t child_tid) //got rid of UNUSED 
 {
 
  //We create a thread for the child we're going to wait on.
@@ -149,7 +149,7 @@ process_wait (pid_t child_pid) //got rid of UNUSED
   {
     struct thread *t = list_entry(iterator, struct thread, child_elem);
     //If we've found our child
-    if(t->pid == child_pid)
+    if(t->tid == child_tid)
     {
       //child is t thread we iterated over previously.
       child = t;
@@ -185,17 +185,25 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
-
+  //make sure the exit code isnt telling us to exit
   if(cur->exit_code == -1)
   {
     sys_exit(-1);
   }
 
-  int process_code = cur->exit_code;
-  printf("%s: exit(%d)\n", cur->name, process_code);
+  //int process_code = cur->exit_code;
+  //printf("%s: exit(%d)\n", cur->name, process_code);
 
+  struct list_elem *iterator;
   lock_acquire(&file_lock);
-  
+  file_close(cur->executable_file); //close the executable 
+  for(iterator = list_front(&cur->open_files); iterator != list_end(&cur->open_files); iterator = list_next(iterator)) //loop to close the files associated with the thread
+  {
+    struct open_file_elem *ofe = list_entry(iterator, struct open_file_elem, elem)
+    file_close(ofe->file);
+    fee(ofe);
+  }
+  lock_release(&file_lock);
 
 
   /* Destroy the current process's page directory and switch back
