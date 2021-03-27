@@ -201,17 +201,17 @@ thread_create (const char *name, int priority,
     ///PROJECT 2///
 
   t->pid = (pid_t) tid;
-  list_init(&t->children);         /* Direct children of this process. */
-  list_init(&t->open_files);       /* Files opened by this process. */
-  sema_init(&t->sema_loading, 0);  /* Semaphore used to track loading. */
   sema_init(&t->sema_exit, 0);
   t->parent_waiting = 0;           /* Set on child denoting if it is making its parent wait */
   t->exit_code = -1;               /* This process's exit code */
+  t->parent = thread_current()->tid;
 
+  // printf("DEBUG: Current process: %s PID: %d\n", thread_current()->name, thread_current()->pid);
+  // printf("DEBUG: Created Process: %s PID: %d\n", name, tid);
+  // printf("DEBUG: New process parent PID: %d\n", &t->parent);
 
   /* Add new process to children list of parent process. */
-  //list_push_back(&thread_current()->children, &t->child_elem);
-  t->parent = thread_current()->pid;
+  list_push_back(&thread_current()->children, &t->child_elem);  
 
   //-PROJECT 2-//
 
@@ -480,6 +480,15 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+
+  ///PROJECT 2///
+
+  list_init(&t->children);         /* Direct children of this process. */
+  list_init(&t->open_files);       /* Files opened by this process. */
+  t->parent = -1;                  /* Initialize parent. */
+  sema_init(&t->sema_loading, 0);  /* Semaphore used to track loading. */
+
+  //-PROJECT 2-//
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);

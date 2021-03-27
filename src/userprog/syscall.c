@@ -113,7 +113,7 @@ syscall_handler (struct intr_frame * f)
   	case SYS_WAIT:
   	{
   		printf ("DEBUG, System call! SYS_WAIT \n");					///DEBUG///
-		pid_t pid = get_word((int *)f->esp + 1);		/* Get PID */
+		  pid_t pid = get_word((int *)f->esp + 1);		/* Get PID */
 
   		f->eax = sys_wait(pid);											
   		break;
