@@ -40,11 +40,7 @@ process_execute (const char *cmd_line)
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
-<<<<<<< HEAD
-    return PID_ERROR;//TID
-=======
     return PID_ERROR;
->>>>>>> 7e6cd9dda8be1fe5172cbd4f606415778ad83225
   strlcpy (fn_copy, cmd_line, PGSIZE);
 
   /* Allocate memory for arguments structure, might be a bit wasteful. */
@@ -52,11 +48,7 @@ process_execute (const char *cmd_line)
   if (args == NULL)                                    /* Error checking. */
   {
     palloc_free_page(fn_copy);
-<<<<<<< HEAD
-    return PID_ERROR;//TID
-=======
     return PID_ERROR;
->>>>>>> 7e6cd9dda8be1fe5172cbd4f606415778ad83225
   }
   args->argc = 0;                                      /* Initialize the arguments counter. */
   args->argv = (char **)palloc_get_page(0);            /* Allocate and initialize argument array. */
@@ -64,11 +56,7 @@ process_execute (const char *cmd_line)
   {
     palloc_free_page(fn_copy);
     palloc_free_page(args);
-<<<<<<< HEAD
-    return PID_ERROR;//TID
-=======
     return PID_ERROR;
->>>>>>> 7e6cd9dda8be1fe5172cbd4f606415778ad83225
   }
 
   /* Use the provided string tokenizer to get the arguments */
@@ -159,11 +147,7 @@ process_wait (tid_t child_tid) //got rid of UNUSED
   }
 
   //Go through the list of children to see if our child is there.
-<<<<<<< HEAD
-  for(iterator = list_front(&thread_current()->children); iterator != list_end(&thread_current()->children); iterator = list_next(iterator)) 
-=======
   for(e = list_front(&curr->children); e != list_end(&curr->children); e = list_next(e))
->>>>>>> 7e6cd9dda8be1fe5172cbd4f606415778ad83225
   {
     struct thread *t = list_entry(e, struct thread, child_elem);
     //If we've found our child
