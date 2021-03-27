@@ -17,6 +17,7 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "userprog/syscall.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (struct arguments * args, void (**eip) (void), void **esp);
@@ -201,9 +202,9 @@ process_exit (void)
   file_close(cur->executable_file); //close the executable 
   for(iterator = list_front(&cur->open_files); iterator != list_end(&cur->open_files); iterator = list_next(iterator)) //loop to close the files associated with the thread
   {
-    struct open_file_elem *ofe = list_entry(iterator, struct open_file_elem, elem)
-    file_close(ofe->file);
-    fee(ofe);
+    struct open_file_elem *ofe = list_entry(iterator, struct open_file_elem, elem);
+    file_close(ofe->file_ptr);
+    free(ofe);
   }
   lock_release(&file_lock);
 
