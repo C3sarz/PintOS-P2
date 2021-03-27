@@ -100,12 +100,15 @@ struct thread
     ///PROJECT 2///
 
     pid_t pid;
+    pid_t parent;                   /* Keep track of this thread/process's parent thread */
+
     struct list children;           /* List with the children of this process. */
     struct list open_files;         /* List with all files opened by this process. */
-    pid_t parent;                   /* Keep track of this thread/process's parent thread */
+    struct list_elem child_elem;    /* Children list element. */
+
     struct semaphore sema_loading;  /* Semaphore for exec synchronization. */
     struct semaphore sema_exit;     /* Semaphore for exit/wait synchronization */
-    struct list_elem child_elem;    /* Children list element. */
+    
     int parent_waiting;             /* Set on child if it has made its parent wait before*/
     int exit_code;                  /* The exit code of this process*/
     struct file * executable_file;   /* Denotes an executable this process has open, want to deny writes */

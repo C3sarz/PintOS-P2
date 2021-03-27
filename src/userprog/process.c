@@ -40,7 +40,11 @@ process_execute (const char *cmd_line)
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
+<<<<<<< HEAD
     return PID_ERROR;//TID
+=======
+    return PID_ERROR;
+>>>>>>> 7e6cd9dda8be1fe5172cbd4f606415778ad83225
   strlcpy (fn_copy, cmd_line, PGSIZE);
 
   /* Allocate memory for arguments structure, might be a bit wasteful. */
@@ -48,7 +52,11 @@ process_execute (const char *cmd_line)
   if (args == NULL)                                    /* Error checking. */
   {
     palloc_free_page(fn_copy);
+<<<<<<< HEAD
     return PID_ERROR;//TID
+=======
+    return PID_ERROR;
+>>>>>>> 7e6cd9dda8be1fe5172cbd4f606415778ad83225
   }
   args->argc = 0;                                      /* Initialize the arguments counter. */
   args->argv = (char **)palloc_get_page(0);            /* Allocate and initialize argument array. */
@@ -56,7 +64,11 @@ process_execute (const char *cmd_line)
   {
     palloc_free_page(fn_copy);
     palloc_free_page(args);
+<<<<<<< HEAD
     return PID_ERROR;//TID
+=======
+    return PID_ERROR;
+>>>>>>> 7e6cd9dda8be1fe5172cbd4f606415778ad83225
   }
 
   /* Use the provided string tokenizer to get the arguments */
@@ -134,7 +146,9 @@ process_wait (tid_t child_tid) //got rid of UNUSED
  //We create a thread for the child we're going to wait on.
   struct thread *child = NULL;
   //Using this to iterate through the child thread list stored in the thread struct
-  struct list_elem *iterator;
+  struct list_elem * e;
+
+  struct thread * curr = thread_current();
 
  //while(1); //REMOVE WHEN IMPLEMENTED WAIT!!!!
 
@@ -145,17 +159,21 @@ process_wait (tid_t child_tid) //got rid of UNUSED
   }
 
   //Go through the list of children to see if our child is there.
+<<<<<<< HEAD
   for(iterator = list_front(&thread_current()->children); iterator != list_end(&thread_current()->children); iterator = list_next(iterator)) 
+=======
+  for(e = list_front(&curr->children); e != list_end(&curr->children); e = list_next(e))
+>>>>>>> 7e6cd9dda8be1fe5172cbd4f606415778ad83225
   {
-    struct thread *t = list_entry(iterator, struct thread, child_elem);
+    struct thread *t = list_entry(e, struct thread, child_elem);
     //If we've found our child
     if(t->tid == child_tid)
     {
       //child is t thread we iterated over previously.
       child = t;
-      break;
     }
   }
+
   //If we aren't in our child, get out.  or if the thread is a child that has already made its parent wait.
   if(!child || child->parent_waiting == 1)
   {
@@ -165,16 +183,16 @@ process_wait (tid_t child_tid) //got rid of UNUSED
   // since we are in the child, we must state that this is its first and only time making its parent wait
   child->parent_waiting = 1;
   //While exit code is not correct value.
-  while(!child->exit_code)
+  while(child->exit_code == -1)
   {
     //Borrowed from other solution for testing.
+
+    //thread_yield();
     asm volatile("" : : : "memory");
   }
 
-  //then return the child's exit code after freeing it from ... memory????
   int process_code = child->exit_code;
   list_remove(&child->child_elem);
-  free(child); //may need may not
   return process_code;
 
 }

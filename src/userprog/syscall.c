@@ -92,14 +92,14 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_EXIT:
   	{
-  		printf ("DEBUG, System call! SYS_EXIT \n");					///DEBUG///
+  		//printf ("DEBUG, System call! SYS_EXIT \n");					///DEBUG///
   		sys_exit(get_word((int *)f->esp + 1));	/* Exit status is the first parameter. */
   		break;
   	}
 
   	case SYS_EXEC:
   	{
-   		printf ("DEBUG, System call! SYS_EXEC \n");					///DEBUG///
+   		//printf ("DEBUG, System call! SYS_EXEC \n");					///DEBUG///
   		int * cmd_line = (int *)f->esp + 1; 			/* Get command line args. */
 
   		if(!valid_user_pointer(cmd_line))	/* Check pointer validity. */	
@@ -112,8 +112,8 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_WAIT:
   	{
-  		printf ("DEBUG, System call! SYS_WAIT \n");					///DEBUG///
-		pid_t pid = get_word((int *)f->esp + 1);		/* Get PID */
+  		//printf ("DEBUG, System call! SYS_WAIT \n");					///DEBUG///
+		  pid_t pid = get_word((int *)f->esp + 1);		/* Get PID */
 
   		f->eax = sys_wait(pid);											
   		break;
@@ -121,7 +121,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_CREATE:
   	{
-  		printf ("DEBUG, System call! SYS_CREATE \n");					///DEBUG///
+  		//printf ("DEBUG, System call! SYS_CREATE \n");					///DEBUG///
   		int * filename = (int *)f->esp + 1; 				/* Get filename. */
   		unsigned filesize = get_word((int *)f->esp + 2);	/* Get size offset. */
 
@@ -134,7 +134,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_REMOVE:
   	{
-  		printf ("DEBUG, System call! SYS_REMOVE \n");					///DEBUG///
+  		//printf ("DEBUG, System call! SYS_REMOVE \n");					///DEBUG///
   		int * filename = (int *)f->esp + 1; 			/* Get filename. */
 
   		if(!valid_user_pointer(filename))	/* Check pointer validity. */	
@@ -146,7 +146,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_OPEN:
   	{
-  		printf ("DEBUG, System call! SYS_OPEN \n");					///DEBUG///
+  		//printf ("DEBUG, System call! SYS_OPEN \n");					///DEBUG///
 		int * filename = (int *)f->esp + 1; 			/* Get filename. */
 
   		if(!valid_user_pointer(filename))	/* Check pointer validity. */		
@@ -158,7 +158,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_FILESIZE:
   	{
-  		printf ("DEBUG, System call! SYS_FILESIZE \n");
+  		//printf ("DEBUG, System call! SYS_FILESIZE \n");
   	  	int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
   		
   		/* Pointer validation done by get_word... */
@@ -169,7 +169,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_READ:
 	{
-  		printf ("DEBUG, System call! SYS_READ \n");					///DEBUG///
+  		//printf ("DEBUG, System call! SYS_READ \n");					///DEBUG///
      	int fd = get_word((int *)f->esp + 1);           /* Get file descriptor. */
     	int * buffer = (int *)f->esp + 2;               /* Get buffer address. */
     	unsigned size = get_word((int *)f->esp + 3);    /* Get size. */
@@ -260,7 +260,7 @@ sys_exit (int status)
 	}
 
 	printf("%s: exit(%d)\n", t->name, status);
-  	printf("exit still WIP!!!!!!!!!!!!\n");
+  	//printf("exit still WIP!!!!!!!!!!!!\n");
   	thread_exit();
 }
 

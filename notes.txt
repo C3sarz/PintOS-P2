@@ -47,6 +47,7 @@ Illegal memory accesses:
 *-thread.c
 	-initialized new properties
 	-added code required for sys_exec (semaphores and loading)
+	-added list initializers to init_thread (to account for the main thread).
 
 *-thread.h
 	-added children list property	(NOT WORKING!!!!!!!!!!!!!!!)
@@ -56,7 +57,7 @@ Illegal memory accesses:
 	-added current_fd property to represent current fd(may not need)?
 
 *-file.h
-	-added new open_file_elem struct.
+	-added new open_file_elem struct (to handle files open by a process).
 
 *-exception.c
 	-changed line 93 to sys_exit(-1) to be closed as a user program not a kernel
