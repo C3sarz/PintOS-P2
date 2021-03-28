@@ -4,6 +4,7 @@
     "files.associations": {
         "complex": "c",
         "interrupt.h": "c",
-        "file.h": "c"
+        "file.h": "c",
+        "filesys.h": "c"
     }
 }

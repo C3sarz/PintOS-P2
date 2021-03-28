@@ -18,7 +18,6 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "userprog/syscall.h"
-
 static thread_func start_process NO_RETURN;
 static bool load (struct arguments * args, void (**eip) (void), void **esp);
 
@@ -67,7 +66,6 @@ process_execute (const char *cmd_line)
     args->argv[args->argc] = token;                 /* Save argument. */
     args->argc += 1;                                /* Increment counter. */
   }
-
   /* Create a new thread to execute FILE_NAME, passing arguments as ARGS. */
   pid = (pid_t)thread_create (args->argv[0], PRI_DEFAULT, start_process, args);
   if (pid == TID_ERROR)
@@ -190,6 +188,7 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
