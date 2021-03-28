@@ -17,6 +17,7 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "userprog/syscall.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (struct arguments * args, void (**eip) (void), void **esp);
@@ -69,11 +70,11 @@ process_execute (const char *cmd_line)
 
   /* Create a new thread to execute FILE_NAME, passing arguments as ARGS. */
   pid = (pid_t)thread_create (args->argv[0], PRI_DEFAULT, start_process, args);
-  if (pid == PID_ERROR)
+  if (pid == TID_ERROR)
   {
     palloc_free_page (fn_copy);
     palloc_free_page(args->argv);
-    palloc_free_page(args);
+    palloc_free_page(args);  
   }
 
   return pid;
@@ -187,6 +188,26 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+  //make sure the exit code isnt telling us to exit
+  if(cur->exit_code == -1)
+  {
+    sys_exit(-1);
+  }
+
+  //int process_code = cur->exit_code;
+  //printf("%s: exit(%d)\n", cur->name, process_code);
+
+  struct list_elem *iterator;
+  lock_acquire(&file_lock);
+  file_close(cur->executable_file); //close the executable 
+  for(iterator = list_front(&cur->open_files); iterator != list_end(&cur->open_files); iterator = list_next(iterator)) //loop to close the files associated with the thread
+  {
+    struct open_file_elem *ofe = list_entry(iterator, struct open_file_elem, elem);
+    file_close(ofe->file_ptr);
+    free(ofe);
+  }
+  lock_release(&file_lock);
+
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
