@@ -200,18 +200,21 @@ thread_create (const char *name, int priority,
 
     ///PROJECT 2///
 
+  intr_disable();
+
   t->pid = (pid_t) tid;
-  sema_init(&t->sema_exit, 0);
   t->parent_waiting = 0;           /* Set on child denoting if it is making its parent wait */
   t->exit_code = -1;               /* This process's exit code */
   t->parent = thread_current()->tid;
 
   // printf("DEBUG: Current process: %s PID: %d\n", thread_current()->name, thread_current()->pid);
-  // printf("DEBUG: Created Process: %s PID: %d\n", name, tid);
-  // printf("DEBUG: New process parent PID: %d\n", &t->parent);
+  // printf("DEBUG: Created Process: %s PID: %d\n", name, t->pid);
+  // printf("DEBUG: New process parent PID: %d\n", t->parent);
 
   /* Add new process to children list of parent process. */
   list_push_back(&thread_current()->children, &t->child_elem);  
+
+  intr_enable();
 
   //-PROJECT 2-//
 

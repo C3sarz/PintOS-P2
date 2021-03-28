@@ -70,7 +70,7 @@ process_execute (const char *cmd_line)
 
   /* Create a new thread to execute FILE_NAME, passing arguments as ARGS. */
   pid = (pid_t)thread_create (args->argv[0], PRI_DEFAULT, start_process, args);
-  if (pid == TID_ERROR)
+  if (pid == PID_ERROR)
   {
     palloc_free_page (fn_copy);
     palloc_free_page(args->argv);

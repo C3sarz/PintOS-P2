@@ -93,14 +93,12 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_EXIT:
   	{
-  		//printf ("DEBUG, System call! SYS_EXIT \n");					///DEBUG///
   		sys_exit(get_word((int *)f->esp + 1));	/* Exit status is the first parameter. */
   		break;
   	}
 
   	case SYS_EXEC:
   	{
-   		//printf ("DEBUG, System call! SYS_EXEC \n");					///DEBUG///
   		int * cmd_line = (int *)f->esp + 1; 			  /* Get command line args. */
 
       /* Verify pointers byte by byte. */
@@ -113,7 +111,6 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_WAIT:
   	{
-  		//printf ("DEBUG, System call! SYS_WAIT \n");					///DEBUG///
 		  pid_t pid = get_word((int *)f->esp + 1);		  /* Get PID */
 
   		f->eax = sys_wait(pid);											
@@ -122,7 +119,6 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_CREATE:
   	{
-  		//printf ("DEBUG, System call! SYS_CREATE \n");					///DEBUG///
   		int * filename = (int *)f->esp + 1; 				/* Get filename. */
   		unsigned filesize = get_word((int *)f->esp + 2);	/* Get size offset. */
 
@@ -136,7 +132,6 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_REMOVE:
   	{
-  		//printf ("DEBUG, System call! SYS_REMOVE \n");					///DEBUG///
   		int * filename = (int *)f->esp + 1; 			/* Get filename. */
 
   		if(!valid_user_pointer(filename)	          /* Check pointer validity. */	
@@ -149,7 +144,6 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_OPEN:
   	{
-  	//printf ("DEBUG, System call! SYS_OPEN \n");					///DEBUG///
 		int * filename = (int *)f->esp + 1; 			   /* Get filename. */
 
   		if(!valid_user_pointer(filename)	         /* Check pointer validity. */		
@@ -162,7 +156,6 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_FILESIZE:
   	{
-  		//printf ("DEBUG, System call! SYS_FILESIZE \n");
   	  int fd = get_word((int *)f->esp + 1);           /* Get file descriptor. */
   		
   		/* Pointer validation done by get_word... */
@@ -173,7 +166,6 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_READ:
 	{
-  		//printf ("DEBUG, System call! SYS_READ \n");					///DEBUG///
      	int fd = get_word((int *)f->esp + 1);           /* Get file descriptor. */
     	int * buffer = (int *)f->esp + 2;               /* Get buffer address. */
     	unsigned size = get_word((int *)f->esp + 3);    /* Get size. */
@@ -188,7 +180,6 @@ syscall_handler (struct intr_frame * f)
 
     case SYS_WRITE:
     {
-	    // printf ("DEBUG, System call! SYS_WRITE \n");
 	    int fd = get_word((int *)f->esp + 1);           /* Get file descriptor. */
 	    int * buffer = (int *)f->esp + 2;               /* Get buffer address. */
 	    unsigned size = get_word((int *)f->esp + 3);    /* Get size. */
@@ -203,7 +194,6 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_SEEK:
   	{
-  		//printf ("DEBUG, System call! SYS_SEEK \n");
       	int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
   		  unsigned offset = get_word((int *)f->esp + 2);		/* Get position offset. */
 
@@ -215,7 +205,6 @@ syscall_handler (struct intr_frame * f)
 
     case SYS_TELL:
     {
-  		//printf ("DEBUG, System call! SYS_TELL \n");
   	  int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
   		
   		/* Pointer validation done by get_word... */
@@ -226,7 +215,6 @@ syscall_handler (struct intr_frame * f)
 
     case SYS_CLOSE:
   	{
-  		//printf ("DEBUG, System call! SYS_CLOSE \n");
   	  int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
   		
   		/* Pointer validation done by get_word... */
@@ -256,25 +244,21 @@ sys_halt (void)
 void
 sys_exit (int status)
 {
-  //printf("CALLED SYS EXIT FUNCTION!!! \n");
     struct thread * t = thread_current();
 
-    //all code regarding children goes here, must free all resources
-  lock_acquire(&file_lock);
   struct list_elem *iterator;
-  //Go through the parent's list of children, free all its files.
+  //Go through the current thread's list of children, free all its files.
   for(iterator = list_begin(&t->children); iterator != list_end(&t->children); iterator = list_next(iterator))
   {
-    //Grab the child thread
+    //Grab a child of the current thread.
     struct thread *child = list_entry(iterator, struct thread, elem);
-    //Grab its file, file descriptor, etc.
-    struct open_file_elem *open_files = list_entry(iterator, struct open_file_elem, elem);
+    //Grab a file element.
+    struct open_file_elem *open_file = list_entry(iterator, struct open_file_elem, elem);
     //Close the file, remove from list, free in memory.
-    file_close(open_files->file_ptr);
-    list_remove(&open_files->elem);
-    free(open_files);
+    sys_close(open_file->fd);
   }
 
+  lock_acquire(&file_lock);
   //If an executable file is being used.
   if(&t->executable_file)
   {
@@ -290,7 +274,7 @@ sys_exit (int status)
     //Grab the child thread
     struct thread *child = list_entry(iterator, struct thread, elem);
     //Indicate that the child should be dead/orphaned, i.e. it has no parent now.
-    child->parent = NULL;
+    //child->parent = NULL;
     //Remove each child from the list.
     list_remove(&child->child_elem);
   }
@@ -299,29 +283,7 @@ sys_exit (int status)
   sema_up(&t->sema_exit);
   
   printf("%s: exit(%d)\n", t->name, status);
-      //printf("exit still WIP!!!!!!!!!!!!\n");
   thread_exit();
-
-
-
-
-
-  //===================================================
-// 	struct thread * t = thread_current();
-
-// 	//all code regarding children goes here
-
-
-
-//   /* Set exit code and allow writing. */ 
-// 	t->exit_code = status;
-//   //file_allow_write(t->executable_file); 
-    
-//   /* Synchronization with process_wait. */
-//   sema_up(&t->sema_exit); //MOVED TO THREAD EXIT
-  
-// 	printf("%s: exit(%d)\n", t->name, status);
-//   thread_exit();
 }
 
 /* Executes a new process from the given command line args. */
@@ -365,7 +327,6 @@ sys_exec (const char *cmd_line)
     if(!found)
     	return -1;
 
-    else
 		  sema_down(&new_child->sema_loading);	/* Wait for process to load, go on if loaded. */
 
 	return pid;
