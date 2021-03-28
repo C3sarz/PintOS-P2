@@ -108,8 +108,7 @@ syscall_handler (struct intr_frame * f)
   			sys_exit(-1);
 
       //printf("validated pointer %x\n",*cmd_line);
-
-  		f->eax = sys_exec((char *)*cmd_line);
+	  f->eax = sys_exec(get_word(cmd_line));
 
   		break;
   	}
@@ -182,8 +181,10 @@ syscall_handler (struct intr_frame * f)
     	unsigned size = get_word((int *)f->esp + 3);    /* Get size. */
 
     	if(!valid_user_pointer(buffer)				          /* Check pointer validity. */
-      || !valid_user_pointer(*buffer))
-
+      || !valid_user_pointer(*buffer) || 
+	  !valid_user_pointer(fd) ||
+	  !valid_user_pointer(size)
+	  )
     		sys_exit(-1);
 
   		f->eax = sys_read(fd, (void *)*buffer, size);	
@@ -263,14 +264,46 @@ sys_exit (int status)
   //printf("CALLED SYS EXIT FUNCTION!!! \n");
 	struct thread * t = thread_current();
 
-	//all code regarding children goes here
-	t->exit_code = status;
-    
+	//all code regarding children goes here, must free all resources
+  lock_acquire(&file_lock);
+  struct list_elem *iterator;
+  //Go through the parent's list of children, free all its files.
+  for(iterator = list_begin(&t->open_files); iterator != list_end(&t->open_files); iterator = list_next(iterator))
+  {
+    //Grab its file, file descriptor, etc.
+    struct open_file_elem *open_file = list_entry(iterator, struct open_file_elem, elem);
+    //Close the file, remove from list, free in memory.
+    file_close(open_file->file_ptr);
+    list_remove(&open_file->elem);
+    free(open_file);
+  }
+
+  //If an executable file is being used.
+  if(&t->executable_file)
+  {
+    //Close it, allows writes once again(I believe.)
+    file_close(t->executable_file);
+  }
+  //Done with our file ops, so we can release the lock.
+  lock_release(&file_lock);
+
+  //Now, we want to go through the list of children, and free them all from this thread.
+  for(iterator = list_begin(&t->children); iterator != list_end(&t->children); iterator = list_next(iterator))
+  {
+    //Grab the child thread
+    struct thread *child = list_entry(iterator, struct thread, elem);
+    //Indicate that the child should be dead/orphaned, i.e. it has no parent now.
+    child->parent = NULL;
+    //Remove each child from the list.
+    list_remove(&child->child_elem);
+  }
+  t->exit_code = status;
+  //Signal that other threads can have the CPU
   sema_up(&t->sema_exit);
   
-	printf("%s: exit(%d)\n", t->name, status);
+  printf("%s: exit(%d)\n", t->name, status);
   	//printf("exit still WIP!!!!!!!!!!!!\n");
-  	thread_exit();
+  thread_exit();
 }
 
 /* Executes a new process from the given command line args. */
@@ -307,7 +340,7 @@ sys_exec (const char *cmd_line)
     else
     {
 		sema_down(&new_child->sema_loading);	/* Wait for process to load, go on if loaded. */
-	  }
+	}
 
 	return pid;
 }
@@ -398,6 +431,7 @@ sys_open (const char *file)
 	/* Set up elem and add to list */
 	new_elem->fd = fd;
 	new_elem->file_ptr = open_file;
+	//Should this be &t instead since all our other reference reference this here.
 	list_push_back(&thread_current()->open_files, &new_elem->elem);
 	lock_release(&file_lock);
 	return fd;
@@ -438,8 +472,8 @@ sys_filesize (int fd)
 	{
 		//Allocate a buffer starting at the passed in buffer
 		uint8_t *buf = (uint8_t *) buffer;
-		unsigned i;
-		for(i = 0; i < size; i++)
+		unsigned i = 0;
+		for(; i < size; i++)
 		{
 			buf[i] = input_getc(); //Built in input function
 		}
