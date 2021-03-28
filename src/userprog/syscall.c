@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <list.h>
+#include <string.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <syscall-nr.h>
@@ -100,10 +101,10 @@ syscall_handler (struct intr_frame * f)
   	case SYS_EXEC:
   	{
    		//printf ("DEBUG, System call! SYS_EXEC \n");					///DEBUG///
-  		int * cmd_line = (int *)f->esp + 1; 			/* Get command line args. */
+  		int * cmd_line = (int *)f->esp + 1; 			  /* Get command line args. */
 
   		if(!valid_user_pointer(cmd_line)
-        || !valid_user_pointer((char *)*cmd_line))	/* Check pointer validity. */	
+      || !valid_user_pointer((char *)*cmd_line))	/* Check pointer validity. */	
   			sys_exit(-1);
 
       //printf("validated pointer %x\n",*cmd_line);
@@ -116,7 +117,7 @@ syscall_handler (struct intr_frame * f)
   	case SYS_WAIT:
   	{
   		//printf ("DEBUG, System call! SYS_WAIT \n");					///DEBUG///
-		  pid_t pid = get_word((int *)f->esp + 1);		/* Get PID */
+		  pid_t pid = get_word((int *)f->esp + 1);		  /* Get PID */
 
   		f->eax = sys_wait(pid);											
   		break;
@@ -128,10 +129,11 @@ syscall_handler (struct intr_frame * f)
   		int * filename = (int *)f->esp + 1; 				/* Get filename. */
   		unsigned filesize = get_word((int *)f->esp + 2);	/* Get size offset. */
 
-  		if(!valid_user_pointer(filename))		/* Check pointer validity. */		
+  		if(!valid_user_pointer(filename)		                  /* Check pointer validity. */		
+      || !valid_user_pointer((char *)*filename))
   			sys_exit(-1);
 
-  		sys_create((char *)*filename, filesize);			/* Call function. */	
+  		f->eax = sys_create((char *)*filename, filesize);			/* Call function. */	
   		break;
   	}
 
@@ -140,7 +142,8 @@ syscall_handler (struct intr_frame * f)
   		//printf ("DEBUG, System call! SYS_REMOVE \n");					///DEBUG///
   		int * filename = (int *)f->esp + 1; 			/* Get filename. */
 
-  		if(!valid_user_pointer(filename))	/* Check pointer validity. */	
+  		if(!valid_user_pointer(filename)	          /* Check pointer validity. */	
+      || !valid_user_pointer((char *)*filename))
   			sys_exit(-1);
 
   		sys_remove((char *)*filename);							/* Call function. */	
@@ -149,10 +152,11 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_OPEN:
   	{
-  		//printf ("DEBUG, System call! SYS_OPEN \n");					///DEBUG///
-		int * filename = (int *)f->esp + 1; 			/* Get filename. */
+  	//printf ("DEBUG, System call! SYS_OPEN \n");					///DEBUG///
+		int * filename = (int *)f->esp + 1; 			   /* Get filename. */
 
-  		if(!valid_user_pointer(filename))	/* Check pointer validity. */		
+  		if(!valid_user_pointer(filename)	         /* Check pointer validity. */		
+      || !valid_user_pointer((char *)*filename))
   			sys_exit(-1);
   		
   		f->eax = sys_open((char *)*filename);
@@ -162,11 +166,11 @@ syscall_handler (struct intr_frame * f)
   	case SYS_FILESIZE:
   	{
   		//printf ("DEBUG, System call! SYS_FILESIZE \n");
-  	  	int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
+  	  int fd = get_word((int *)f->esp + 1);           /* Get file descriptor. */
   		
   		/* Pointer validation done by get_word... */
 
-  		f->eax = sys_filesize(fd);							/* Find size. */
+  		f->eax = sys_filesize(fd);						          	/* Find size. */
   		break;
   	}
 
@@ -177,7 +181,7 @@ syscall_handler (struct intr_frame * f)
     	int * buffer = (int *)f->esp + 2;               /* Get buffer address. */
     	unsigned size = get_word((int *)f->esp + 3);    /* Get size. */
 
-    	if(!valid_user_pointer(buffer))				    /* Check pointer validity. */
+    	if(!valid_user_pointer(buffer))				          /* Check pointer validity. */
     		sys_exit(-1);
 
   		f->eax = sys_read(fd, (void *)*buffer, size);	
@@ -191,7 +195,7 @@ syscall_handler (struct intr_frame * f)
 	    int * buffer = (int *)f->esp + 2;               /* Get buffer address. */
 	    unsigned size = get_word((int *)f->esp + 3);    /* Get size. */
 
-	    if(!valid_user_pointer(buffer))				  /* Check pointer validity. */
+	    if(!valid_user_pointer(buffer))				          /* Check pointer validity. */
 	    	sys_exit(-1);
 
 	    f->eax = sys_write(fd, (void *)*buffer, size);    	  /* Call function. */
@@ -202,7 +206,7 @@ syscall_handler (struct intr_frame * f)
   	{
   		//printf ("DEBUG, System call! SYS_SEEK \n");
       	int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
-  		unsigned offset = get_word((int *)f->esp + 2);		/* Get position offset. */
+  		  unsigned offset = get_word((int *)f->esp + 2);		/* Get position offset. */
 
   		/* Pointer validation done by get_word... */
 
@@ -213,7 +217,7 @@ syscall_handler (struct intr_frame * f)
     case SYS_TELL:
     {
   		//printf ("DEBUG, System call! SYS_TELL \n");
-  	  	int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
+  	  int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
   		
   		/* Pointer validation done by get_word... */
 
@@ -224,7 +228,7 @@ syscall_handler (struct intr_frame * f)
     case SYS_CLOSE:
   	{
   		//printf ("DEBUG, System call! SYS_CLOSE \n");
-  	  	int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
+  	  int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
   		
   		/* Pointer validation done by get_word... */
 
@@ -253,15 +257,14 @@ sys_halt (void)
 void
 sys_exit (int status)
 {
+  //printf("CALLED SYS EXIT FUNCTION!!! \n");
 	struct thread * t = thread_current();
 
 	//all code regarding children goes here
-	//Write up says: If the process's parent is waiting on it, that value should be returned. IDK what that means in terms of implementing so I may be missing it
-	if(t != NULL)
-	{
-		t->exit_code = status;
-	}
-
+	t->exit_code = status;
+    
+  sema_up(&t->sema_exit);
+  
 	printf("%s: exit(%d)\n", t->name, status);
   	//printf("exit still WIP!!!!!!!!!!!!\n");
   	thread_exit();
@@ -347,7 +350,7 @@ sys_open (const char *file)
 {
 	struct thread * t = thread_current();
 	int fd = -1;
-	if(&t->open_files == NULL)						/* Check if list is not NULL */
+	if(&t->open_files == NULL)					/* Check if list is not NULL */
 		return -1;
 
 	lock_acquire(&file_lock);						/* Start critical section. */

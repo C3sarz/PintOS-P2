@@ -487,6 +487,7 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->open_files);       /* Files opened by this process. */
   t->parent = -1;                  /* Initialize parent. */
   sema_init(&t->sema_loading, 0);  /* Semaphore used to track loading. */
+  sema_init(&t->sema_exit, 0);     /* Semaphore used to track exiting. */
 
   //-PROJECT 2-//
 

@@ -160,7 +160,7 @@ process_wait (tid_t child_tid) //got rid of UNUSED
   }
 
   //If we aren't in our child, get out.  or if the thread is a child that has already made its parent wait.
-  if(!child || child->parent_waiting == 1)
+  if(child == NULL || child->parent_waiting == 1)
   {
     return -1;
   }
@@ -168,13 +168,15 @@ process_wait (tid_t child_tid) //got rid of UNUSED
   // since we are in the child, we must state that this is its first and only time making its parent wait
   child->parent_waiting = 1;
   //While exit code is not correct value.
-  while(child->exit_code == -1)
-  {
-    //Borrowed from other solution for testing.
+  // while(child->exit_code == -1)
+  // {
+  //   //Borrowed from other solution for testing.
 
-    //thread_yield();
-    asm volatile("" : : : "memory");
-  }
+  //   //thread_yield();
+  //   asm volatile("" : : : "memory");
+  // }
+
+  sema_down(&child->sema_exit);
 
   int process_code = child->exit_code;
   list_remove(&child->child_elem);
@@ -188,12 +190,6 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
-  //make sure the exit code isnt telling us to exit
-  if(cur->exit_code == -1)
-  {
-    sys_exit(-1);
-  }
-
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
