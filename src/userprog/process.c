@@ -323,13 +323,15 @@ load (struct arguments * args, void (**eip) (void), void **esp)
       goto done; 
     }
 
-/* ADDED CODE: May add back in later
-    //Deny a write to this executable once it is loaded.
-  file_deny_write(file);
-  //Denote that this thread has this executable file.
+  ///PROJECT 2///
 
+  //Deny a write to this executable once it is loaded.
+  //file_deny_write(file);
+
+  //Denote that this thread has this executable file.
   t->executable_file = file;
-*/
+
+  //-PROJECT 2-//
 
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr

@@ -260,17 +260,23 @@ sys_halt (void)
 void
 sys_exit (int status)
 {
-  //printf("CALLED SYS EXIT FUNCTION!!! \n");
 	struct thread * t = thread_current();
 
+
+
 	//all code regarding children goes here
+
+
+
+  /* Set exit code and allow writing. */ 
 	t->exit_code = status;
+  //file_allow_write(t->executable_file); 
     
+  /* Synchronization with process_wait. */
   sema_up(&t->sema_exit);
   
 	printf("%s: exit(%d)\n", t->name, status);
-  	//printf("exit still WIP!!!!!!!!!!!!\n");
-  	thread_exit();
+  thread_exit();
 }
 
 /* Executes a new process from the given command line args. */
