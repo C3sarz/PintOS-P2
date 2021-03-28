@@ -92,18 +92,21 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_EXIT:
   	{
-  		printf ("DEBUG, System call! SYS_EXIT \n");					///DEBUG///
+  		//printf ("DEBUG, System call! SYS_EXIT \n");					///DEBUG///
   		sys_exit(get_word((int *)f->esp + 1));	/* Exit status is the first parameter. */
   		break;
   	}
 
   	case SYS_EXEC:
   	{
-   		printf ("DEBUG, System call! SYS_EXEC \n");					///DEBUG///
+   		//printf ("DEBUG, System call! SYS_EXEC \n");					///DEBUG///
   		int * cmd_line = (int *)f->esp + 1; 			/* Get command line args. */
 
-  		if(!valid_user_pointer(cmd_line))	/* Check pointer validity. */	
+  		if(!valid_user_pointer(cmd_line)
+        || !valid_user_pointer((char *)*cmd_line))	/* Check pointer validity. */	
   			sys_exit(-1);
+
+      //printf("validated pointer %x\n",*cmd_line);
 
   		f->eax = sys_exec((char *)*cmd_line);
 
@@ -112,7 +115,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_WAIT:
   	{
-  		printf ("DEBUG, System call! SYS_WAIT \n");					///DEBUG///
+  		//printf ("DEBUG, System call! SYS_WAIT \n");					///DEBUG///
 		  pid_t pid = get_word((int *)f->esp + 1);		/* Get PID */
 
   		f->eax = sys_wait(pid);											
@@ -121,7 +124,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_CREATE:
   	{
-  		printf ("DEBUG, System call! SYS_CREATE \n");					///DEBUG///
+  		//printf ("DEBUG, System call! SYS_CREATE \n");					///DEBUG///
   		int * filename = (int *)f->esp + 1; 				/* Get filename. */
   		unsigned filesize = get_word((int *)f->esp + 2);	/* Get size offset. */
 
@@ -134,7 +137,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_REMOVE:
   	{
-  		printf ("DEBUG, System call! SYS_REMOVE \n");					///DEBUG///
+  		//printf ("DEBUG, System call! SYS_REMOVE \n");					///DEBUG///
   		int * filename = (int *)f->esp + 1; 			/* Get filename. */
 
   		if(!valid_user_pointer(filename))	/* Check pointer validity. */	
@@ -146,7 +149,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_OPEN:
   	{
-  		printf ("DEBUG, System call! SYS_OPEN \n");					///DEBUG///
+  		//printf ("DEBUG, System call! SYS_OPEN \n");					///DEBUG///
 		int * filename = (int *)f->esp + 1; 			/* Get filename. */
 
   		if(!valid_user_pointer(filename))	/* Check pointer validity. */		
@@ -158,7 +161,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_FILESIZE:
   	{
-  		printf ("DEBUG, System call! SYS_FILESIZE \n");
+  		//printf ("DEBUG, System call! SYS_FILESIZE \n");
   	  	int fd = get_word((int *)f->esp + 1);           	/* Get file descriptor. */
   		
   		/* Pointer validation done by get_word... */
@@ -169,7 +172,7 @@ syscall_handler (struct intr_frame * f)
 
   	case SYS_READ:
 	{
-  		printf ("DEBUG, System call! SYS_READ \n");					///DEBUG///
+  		//printf ("DEBUG, System call! SYS_READ \n");					///DEBUG///
      	int fd = get_word((int *)f->esp + 1);           /* Get file descriptor. */
     	int * buffer = (int *)f->esp + 2;               /* Get buffer address. */
     	unsigned size = get_word((int *)f->esp + 3);    /* Get size. */
@@ -260,7 +263,7 @@ sys_exit (int status)
 	}
 
 	printf("%s: exit(%d)\n", t->name, status);
-  	printf("exit still WIP!!!!!!!!!!!!\n");
+  	//printf("exit still WIP!!!!!!!!!!!!\n");
   	thread_exit();
 }
 
@@ -298,7 +301,7 @@ sys_exec (const char *cmd_line)
     else
     {
 		sema_down(&new_child->sema_loading);	/* Wait for process to load, go on if loaded. */
-	}
+	  }
 
 	return pid;
 }
@@ -517,33 +520,6 @@ sys_seek (int fd, unsigned offset)
 	lock_release(&file_lock);
 }
 
-// /* Returns the offset of the next byte to be read 
-// 	or written in the file given by fd. */
-// unsigned
-// sys_tell (int fd)
-// {
-// 	struct open_file_elem * open_file_ptr;
-// 	lock_acquire(&file_lock);
-// 	unsigned offset;
-
-// 	/* Search for the file. */
-// 	open_file_ptr = find_file(fd);
-
-// 	 If file not found, return. 
-//     if(open_file_ptr == NULL)
-//     {
-//     	lock_release(&file_lock);
-//     	return 0;	/* Error case ? */
-//     }
-	
-// 	/* Find offset with filesys function. */
-//     offset = file_tell(open_file_ptr->file_ptr);
-
-//     lock_release(&file_lock);
-//     return offset;
-// }
-// =======
-
 /* Returns the address of the file descriptor's open file if it's in the current thread's file descriptor list or -1 if not found. */
 unsigned
 sys_tell (int fd)
@@ -626,27 +602,4 @@ find_file(int fd)
     return NULL;			/* File not found. */
 }
 
-// /*Helper function to check a given address and see if it's a valid user address.  Returns pointer to that address.
-// Uses some functionality of vaddr in threads folder*/
-// void* check_valid(const void *addr)
-// {
-// 	if(!is_user_vaddr(addr))
-// 	{
-
-// 		//Exit the process if not a valid user address.
-// 		sys_exit(-1);
-// 		return 0;
-
-// 	}
-// 	//Represents the address we will return if valid
-// 	void *address_returned = pagedir_get_page(thread_current()->pagedir, addr);
-// 	//If our address returned is not valid, we exit again.
-// 	if(!address_returned)
-// 	{
-// 		sys_exit(-1);
-// 		return 0;
-// 	}
-// 	//Return the valid user address if it's valid.
-// 	return address_returned;
-// }
 //- PROJECT 2 -//
