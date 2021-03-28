@@ -181,7 +181,9 @@ syscall_handler (struct intr_frame * f)
     	int * buffer = (int *)f->esp + 2;               /* Get buffer address. */
     	unsigned size = get_word((int *)f->esp + 3);    /* Get size. */
 
-    	if(!valid_user_pointer(buffer))				          /* Check pointer validity. */
+    	if(!valid_user_pointer(buffer)				          /* Check pointer validity. */
+      || !valid_user_pointer(*buffer))
+
     		sys_exit(-1);
 
   		f->eax = sys_read(fd, (void *)*buffer, size);	
@@ -195,7 +197,8 @@ syscall_handler (struct intr_frame * f)
 	    int * buffer = (int *)f->esp + 2;               /* Get buffer address. */
 	    unsigned size = get_word((int *)f->esp + 3);    /* Get size. */
 
-	    if(!valid_user_pointer(buffer))				          /* Check pointer validity. */
+	    if(!valid_user_pointer(buffer)				          /* Check pointer validity. */
+      || !valid_user_pointer(*buffer))
 	    	sys_exit(-1);
 
 	    f->eax = sys_write(fd, (void *)*buffer, size);    	  /* Call function. */
