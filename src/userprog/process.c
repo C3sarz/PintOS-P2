@@ -194,20 +194,6 @@ process_exit (void)
     sys_exit(-1);
   }
 
-  //int process_code = cur->exit_code;
-  //printf("%s: exit(%d)\n", cur->name, process_code);
-
-  struct list_elem *iterator;
-  lock_acquire(&file_lock);
-  file_close(cur->executable_file); //close the executable 
-  for(iterator = list_front(&cur->open_files); iterator != list_end(&cur->open_files); iterator = list_next(iterator)) //loop to close the files associated with the thread
-  {
-    struct open_file_elem *ofe = list_entry(iterator, struct open_file_elem, elem);
-    file_close(ofe->file_ptr);
-    free(ofe);
-  }
-  lock_release(&file_lock);
-
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
