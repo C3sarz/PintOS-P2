@@ -103,13 +103,11 @@ syscall_handler (struct intr_frame * f)
    		//printf ("DEBUG, System call! SYS_EXEC \n");					///DEBUG///
   		int * cmd_line = (int *)f->esp + 1; 			  /* Get command line args. */
 
-  		if(!valid_user_pointer(cmd_line)
-      || !valid_user_pointer((char *)*cmd_line))	/* Check pointer validity. */	
-  			sys_exit(-1);
+      /* Verify pointers byte by byte. */
+      get_word(cmd_line);
+      get_word((int *) *cmd_line);
 
-      //printf("validated pointer %x\n",*cmd_line);
-	  f->eax = sys_exec(get_word(cmd_line));
-
+	    f->eax = sys_exec(get_word(cmd_line));
   		break;
   	}
 
@@ -181,10 +179,7 @@ syscall_handler (struct intr_frame * f)
     	unsigned size = get_word((int *)f->esp + 3);    /* Get size. */
 
     	if(!valid_user_pointer(buffer)				          /* Check pointer validity. */
-      || !valid_user_pointer(*buffer) || 
-	  !valid_user_pointer(fd) ||
-	  !valid_user_pointer(size)
-	  )
+      || !valid_user_pointer(*buffer))
     		sys_exit(-1);
 
   		f->eax = sys_read(fd, (void *)*buffer, size);	
@@ -261,36 +256,23 @@ sys_halt (void)
 void
 sys_exit (int status)
 {
-	struct thread * t = thread_current();
+  //printf("CALLED SYS EXIT FUNCTION!!! \n");
+    struct thread * t = thread_current();
 
-// <<<<<<< HEAD
-
-
-// 	//all code regarding children goes here
-
-
-
-//   /* Set exit code and allow writing. */ 
-// 	t->exit_code = status;
-//   //file_allow_write(t->executable_file); 
-    
-//   /* Synchronization with process_wait. */
-//   sema_up(&t->sema_exit);
-  
-// 	printf("%s: exit(%d)\n", t->name, status);
-// =======
-	//all code regarding children goes here, must free all resources
+    //all code regarding children goes here, must free all resources
   lock_acquire(&file_lock);
   struct list_elem *iterator;
   //Go through the parent's list of children, free all its files.
-  for(iterator = list_begin(&t->open_files); iterator != list_end(&t->open_files); iterator = list_next(iterator))
+  for(iterator = list_begin(&t->children); iterator != list_end(&t->children); iterator = list_next(iterator))
   {
+    //Grab the child thread
+    struct thread *child = list_entry(iterator, struct thread, elem);
     //Grab its file, file descriptor, etc.
-    struct open_file_elem *open_file = list_entry(iterator, struct open_file_elem, elem);
+    struct open_file_elem *open_files = list_entry(iterator, struct open_file_elem, elem);
     //Close the file, remove from list, free in memory.
-    file_close(open_file->file_ptr);
-    list_remove(&open_file->elem);
-    free(open_file);
+    file_close(open_files->file_ptr);
+    list_remove(&open_files->elem);
+    free(open_files);
   }
 
   //If an executable file is being used.
@@ -313,12 +295,33 @@ sys_exit (int status)
     list_remove(&child->child_elem);
   }
   t->exit_code = status;
-  //Signal that other threads can have the CPU
+    
   sema_up(&t->sema_exit);
   
   printf("%s: exit(%d)\n", t->name, status);
-  	//printf("exit still WIP!!!!!!!!!!!!\n");
+      //printf("exit still WIP!!!!!!!!!!!!\n");
   thread_exit();
+
+
+
+
+
+  //===================================================
+// 	struct thread * t = thread_current();
+
+// 	//all code regarding children goes here
+
+
+
+//   /* Set exit code and allow writing. */ 
+// 	t->exit_code = status;
+//   //file_allow_write(t->executable_file); 
+    
+//   /* Synchronization with process_wait. */
+//   sema_up(&t->sema_exit); //MOVED TO THREAD EXIT
+  
+// 	printf("%s: exit(%d)\n", t->name, status);
+//   thread_exit();
 }
 
 /* Executes a new process from the given command line args. */
@@ -327,16 +330,24 @@ sys_exec (const char *cmd_line)
 {
 	lock_acquire(&file_lock);
 	pid_t pid = process_execute(cmd_line);	/* Run process and get PID. */
-	lock_release(&file_lock);	
+	lock_release(&file_lock);
 
 	if(pid == -1)	/* ERROR case. */
 		return -1;
+
+  //printf("Execute successful\n");
 
 	/* Iterate through list to find matching PID. */
 	struct thread * t = thread_current();
 	struct list_elem * e;
 	bool found = false;
 	struct thread * new_child;
+
+  /* Error checking.*/
+  if(list_empty(&t->children))
+  {
+    return -1;
+  }
 
 	for (e = list_begin (&t->children); e != list_end (&t->children);
         e = list_next (e))
@@ -349,13 +360,13 @@ sys_exec (const char *cmd_line)
         }
     }
 
+    //printf("passed list\n");
+
     if(!found)
     	return -1;
 
     else
-    {
-		sema_down(&new_child->sema_loading);	/* Wait for process to load, go on if loaded. */
-	}
+		  sema_down(&new_child->sema_loading);	/* Wait for process to load, go on if loaded. */
 
 	return pid;
 }

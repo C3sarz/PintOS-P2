@@ -18,6 +18,7 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "userprog/syscall.h"
+
 static thread_func start_process NO_RETURN;
 static bool load (struct arguments * args, void (**eip) (void), void **esp);
 
@@ -66,6 +67,7 @@ process_execute (const char *cmd_line)
     args->argv[args->argc] = token;                 /* Save argument. */
     args->argc += 1;                                /* Increment counter. */
   }
+
   /* Create a new thread to execute FILE_NAME, passing arguments as ARGS. */
   pid = (pid_t)thread_create (args->argv[0], PRI_DEFAULT, start_process, args);
   if (pid == TID_ERROR)
@@ -95,17 +97,22 @@ start_process (void * passed_args)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
+
+  //PROJECT 2///
+
   success = load (args, &if_.eip, &if_.esp);
 
   /* Free args. */
   palloc_free_page (args->argv);
   palloc_free_page (args);
 
+  sema_up(&thread_current()->sema_loading); /* Process loaded. */
+
   /* If load failed, quit. */
   if (!success) 
-    thread_exit ();
+    sys_exit(-1);
 
-  sema_up(&thread_current()->sema_loading); /* Process loaded. */
+  //-PROJECT 2-//
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -165,14 +172,6 @@ process_wait (tid_t child_tid) //got rid of UNUSED
 
   // since we are in the child, we must state that this is its first and only time making its parent wait
   child->parent_waiting = 1;
-  //While exit code is not correct value.
-  // while(child->exit_code == -1)
-  // {
-  //   //Borrowed from other solution for testing.
-
-  //   //thread_yield();
-  //   asm volatile("" : : : "memory");
-  // }
 
   sema_down(&child->sema_exit);
 
@@ -188,7 +187,6 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
-
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -325,7 +323,7 @@ load (struct arguments * args, void (**eip) (void), void **esp)
   ///PROJECT 2///
 
   //Deny a write to this executable once it is loaded.
-  //file_deny_write(file);
+  file_deny_write(file);
 
   //Denote that this thread has this executable file.
   t->executable_file = file;
@@ -421,7 +419,7 @@ load (struct arguments * args, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-  file_close (file);
+  //file_close (file);
   return success;
 }
 
