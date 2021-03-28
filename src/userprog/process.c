@@ -191,6 +191,52 @@ process_exit (void)
   struct thread *cur = thread_current ();
   uint32_t *pd;
 
+//- PROJECT 2 -//
+
+/*
+
+  //Grab the lock before we close any files.
+  lock_acquire(&file_lock);
+  struct thread *child;
+  struct list_elem *iterator;
+  //Go through the parent's list of children.
+  for(iterator = list_begin(&thread_current()->children); iterator != list_end(&thread_current()->children); iterator = list_next(iterator))
+  {
+    //Grab the child thread
+    child = list_entry(iterator, struct thread, elem);
+    //Grab its file, file descriptor, etc.
+    struct open_file_elem *open_files = list_entry(iterator, struct open_file_elem, elem);
+    //Close the file, remove from list, free in memory.
+    file_close(open_files->file_ptr);
+    list_remove(open_files);
+    free(open_files);
+  }
+
+  //If an executable file is being used.
+  if(cur->executable_file)
+  {
+    //Close it, allows writes once again(I believe.)
+    file_close(cur->executable_file);
+  }
+  //Done with our file ops, so we can release the lock.
+  lock_release(&file_lock);
+
+  //Now, we want to go through the list of children, and free them all from this thread.
+  for(iterator = list_begin(&thread_current()->children); iterator != list_end(&thread_current()->children); iterator = list_next(iterator))
+  {
+    //Grab the child thread
+    child = list_entry(iterator, struct thread, elem);
+    //Remove each child from the list.
+    list_remove(&child->children);
+  }
+  //Wake up parent.
+  sema_up(&thread_current()->sema_exit);
+  //Need to indicate somehow that the thread should be in a dying state
+  //in order to help wait call.  need ideas here.
+
+  */
+//- PROJECT 2 -//
+
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
